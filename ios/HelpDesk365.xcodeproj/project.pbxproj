@@ -1,0 +1,624 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 54;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		09DA9934E86A461FA08356AF /* Roboto-MediumItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 5830B66645B2460B98237566 /* Roboto-MediumItalic.ttf */; };
+		0A515F04F57D42D1A063CCEA /* Roboto-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 92D9D461A9214791999F75E8 /* Roboto-Medium.ttf */; };
+		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		26E29FFDDAEA4C26A0A656E6 /* Poppins-SemiBoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 4403ECC7F7464F86A0D042A6 /* Poppins-SemiBoldItalic.ttf */; };
+		2732BB6ED60E4471BC5E4F50 /* Poppins-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 28D1E5B1D8A14F93B466C859 /* Poppins-Black.ttf */; };
+		31ADF3C1EAF34465A24EA006 /* Roboto-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 313E5ABE321F47E7942FA8FC /* Roboto-Regular.ttf */; };
+		40387ED3AD8E4F7AA02491E6 /* Roboto-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 747CC2CBD0E0470EBA9BA9C9 /* Roboto-Light.ttf */; };
+		48F35B2E409249A28E7AB580 /* Poppins-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BDEF2BDFED834292887C8808 /* Poppins-Regular.ttf */; };
+		52CF4460994D4C02A18BAC58 /* Poppins-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2EE6A5EB307240B8939855FE /* Poppins-SemiBold.ttf */; };
+		5F902BA0E543432ABA711572 /* Poppins-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 60B95AB5E1E74515ADAA43A7 /* Poppins-Light.ttf */; };
+		669FD1F2BD0E4827A7DA20D0 /* Poppins-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8CE28033EB98429681A26AEF /* Poppins-ExtraBold.ttf */; };
+		74DAA2157510493AAF2F90B9 /* Roboto-Thin.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 265293BE8F7F46F6999538B8 /* Roboto-Thin.ttf */; };
+		74DE5650D56C41209296BA36 /* Poppins-Thin.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7AF029B9F2404380A9D05B37 /* Poppins-Thin.ttf */; };
+		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
+		7AC4A4CB43D6BEEA4DAF672E /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
+		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		89FA1D7D409848538FD581FE /* Poppins-LightItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 63F2344B6C8941CDA5747251 /* Poppins-LightItalic.ttf */; };
+		8EB42C5D89FF4D4CBC54A825 /* Poppins-BoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A7CBB59B9F88484A94E42B35 /* Poppins-BoldItalic.ttf */; };
+		9636C63C70A64F24A03339D7 /* Poppins-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 462DF2CA23614F6B8063778E /* Poppins-Bold.ttf */; };
+		9713B978071147F9B4F5E8B9 /* Poppins-MediumItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8613B275D0D4415CAC547882 /* Poppins-MediumItalic.ttf */; };
+		9D79A171312F4ABDABA5D8C5 /* Roboto-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C624AA8B80444F1BBD43DF87 /* Roboto-Black.ttf */; };
+		9F170D43AE6E42D781AF4625 /* Roboto-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1DA01397FB8946DEB9B7DCDC /* Roboto-Bold.ttf */; };
+		A35B7739F3C748F9B0E5A018 /* Poppins-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = D37D1C402058448C8B1EDEE8 /* Poppins-Italic.ttf */; };
+		A7BB32016C064A289C248EA8 /* Poppins-ExtraLight.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BBEB6B6EF4BB45F58318E5D3 /* Poppins-ExtraLight.ttf */; };
+		A7BC051276B44A6F83E2395B /* Roboto-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9D6713B4EACF4EEA8D82DB24 /* Roboto-Italic.ttf */; };
+		A9007474AD844BE9A45A1BEF /* Roboto-ThinItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FC3A8CEFEE814CDE85237426 /* Roboto-ThinItalic.ttf */; };
+		B0AA1D29EAB4435B97651BEB /* Poppins-ThinItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 42E184D5161A445EA8F07877 /* Poppins-ThinItalic.ttf */; };
+		B1D6FCE563C84B6893245315 /* Roboto-BoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6B5A3754FF6944538512E2D6 /* Roboto-BoldItalic.ttf */; };
+		B473A0C48F414303885F1AE9 /* Poppins-ExtraLightItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2B16503637DB4350B029234B /* Poppins-ExtraLightItalic.ttf */; };
+		BBB85F71D874425684C1DFE1 /* Roboto-LightItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FF71C0AECA0B460786A8D8D8 /* Roboto-LightItalic.ttf */; };
+		C34FA70E2E664C8B821A0B40 /* Poppins-ExtraBoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AF5ADBB9D679470D8B1B74D9 /* Poppins-ExtraBoldItalic.ttf */; };
+		C7E6FEF6AA2249AE9595DA1D /* Roboto-BlackItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9AFD667E967A424A8228E0FB /* Roboto-BlackItalic.ttf */; };
+		E0E9F7372F0E4155A1D32CCA /* Poppins-BlackItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AAA04A4EE0F74931B98AE0B3 /* Poppins-BlackItalic.ttf */; };
+		E18979095B7521E864F02C11 /* libPods-HelpDesk365.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2DF0844CC51882A766F1B646 /* libPods-HelpDesk365.a */; };
+		E3C2FDABEC244273AAB8A524 /* Poppins-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A98FC000BC5E4B96A498F15F /* Poppins-Medium.ttf */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		13B07F961A680F5B00A75B9A /* HelpDesk365.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HelpDesk365.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = HelpDesk365/Images.xcassets; sourceTree = "<group>"; };
+		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = HelpDesk365/Info.plist; sourceTree = "<group>"; };
+		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = HelpDesk365/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		1DA01397FB8946DEB9B7DCDC /* Roboto-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Roboto-Bold.ttf"; path = "../src/assets/fonts/Roboto-Bold.ttf"; sourceTree = "<group>"; };
+		265293BE8F7F46F6999538B8 /* Roboto-Thin.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Roboto-Thin.ttf"; path = "../src/assets/fonts/Roboto-Thin.ttf"; sourceTree = "<group>"; };
+		28D1E5B1D8A14F93B466C859 /* Poppins-Black.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-Black.ttf"; path = "../src/assets/fonts/Poppins-Black.ttf"; sourceTree = "<group>"; };
+		2B16503637DB4350B029234B /* Poppins-ExtraLightItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-ExtraLightItalic.ttf"; path = "../src/assets/fonts/Poppins-ExtraLightItalic.ttf"; sourceTree = "<group>"; };
+		2DF0844CC51882A766F1B646 /* libPods-HelpDesk365.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-HelpDesk365.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		2EE6A5EB307240B8939855FE /* Poppins-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-SemiBold.ttf"; path = "../src/assets/fonts/Poppins-SemiBold.ttf"; sourceTree = "<group>"; };
+		313E5ABE321F47E7942FA8FC /* Roboto-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Roboto-Regular.ttf"; path = "../src/assets/fonts/Roboto-Regular.ttf"; sourceTree = "<group>"; };
+		42E184D5161A445EA8F07877 /* Poppins-ThinItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-ThinItalic.ttf"; path = "../src/assets/fonts/Poppins-ThinItalic.ttf"; sourceTree = "<group>"; };
+		4403ECC7F7464F86A0D042A6 /* Poppins-SemiBoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-SemiBoldItalic.ttf"; path = "../src/assets/fonts/Poppins-SemiBoldItalic.ttf"; sourceTree = "<group>"; };
+		462DF2CA23614F6B8063778E /* Poppins-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-Bold.ttf"; path = "../src/assets/fonts/Poppins-Bold.ttf"; sourceTree = "<group>"; };
+		5830B66645B2460B98237566 /* Roboto-MediumItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Roboto-MediumItalic.ttf"; path = "../src/assets/fonts/Roboto-MediumItalic.ttf"; sourceTree = "<group>"; };
+		5B8BF67D2BE412EF993B6783 /* Pods-HelpDesk365.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HelpDesk365.release.xcconfig"; path = "Target Support Files/Pods-HelpDesk365/Pods-HelpDesk365.release.xcconfig"; sourceTree = "<group>"; };
+		60B95AB5E1E74515ADAA43A7 /* Poppins-Light.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-Light.ttf"; path = "../src/assets/fonts/Poppins-Light.ttf"; sourceTree = "<group>"; };
+		63F2344B6C8941CDA5747251 /* Poppins-LightItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-LightItalic.ttf"; path = "../src/assets/fonts/Poppins-LightItalic.ttf"; sourceTree = "<group>"; };
+		6B5A3754FF6944538512E2D6 /* Roboto-BoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Roboto-BoldItalic.ttf"; path = "../src/assets/fonts/Roboto-BoldItalic.ttf"; sourceTree = "<group>"; };
+		747CC2CBD0E0470EBA9BA9C9 /* Roboto-Light.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Roboto-Light.ttf"; path = "../src/assets/fonts/Roboto-Light.ttf"; sourceTree = "<group>"; };
+		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = HelpDesk365/AppDelegate.swift; sourceTree = "<group>"; };
+		7AF029B9F2404380A9D05B37 /* Poppins-Thin.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-Thin.ttf"; path = "../src/assets/fonts/Poppins-Thin.ttf"; sourceTree = "<group>"; };
+		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = HelpDesk365/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		8613B275D0D4415CAC547882 /* Poppins-MediumItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-MediumItalic.ttf"; path = "../src/assets/fonts/Poppins-MediumItalic.ttf"; sourceTree = "<group>"; };
+		8CE28033EB98429681A26AEF /* Poppins-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-ExtraBold.ttf"; path = "../src/assets/fonts/Poppins-ExtraBold.ttf"; sourceTree = "<group>"; };
+		92D9D461A9214791999F75E8 /* Roboto-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Roboto-Medium.ttf"; path = "../src/assets/fonts/Roboto-Medium.ttf"; sourceTree = "<group>"; };
+		9AFD667E967A424A8228E0FB /* Roboto-BlackItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Roboto-BlackItalic.ttf"; path = "../src/assets/fonts/Roboto-BlackItalic.ttf"; sourceTree = "<group>"; };
+		9D6713B4EACF4EEA8D82DB24 /* Roboto-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Roboto-Italic.ttf"; path = "../src/assets/fonts/Roboto-Italic.ttf"; sourceTree = "<group>"; };
+		A7CBB59B9F88484A94E42B35 /* Poppins-BoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-BoldItalic.ttf"; path = "../src/assets/fonts/Poppins-BoldItalic.ttf"; sourceTree = "<group>"; };
+		A98FC000BC5E4B96A498F15F /* Poppins-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-Medium.ttf"; path = "../src/assets/fonts/Poppins-Medium.ttf"; sourceTree = "<group>"; };
+		AAA04A4EE0F74931B98AE0B3 /* Poppins-BlackItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-BlackItalic.ttf"; path = "../src/assets/fonts/Poppins-BlackItalic.ttf"; sourceTree = "<group>"; };
+		AF5ADBB9D679470D8B1B74D9 /* Poppins-ExtraBoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-ExtraBoldItalic.ttf"; path = "../src/assets/fonts/Poppins-ExtraBoldItalic.ttf"; sourceTree = "<group>"; };
+		BA1A3BB913C11D9AA6B60E1E /* Pods-HelpDesk365.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HelpDesk365.debug.xcconfig"; path = "Target Support Files/Pods-HelpDesk365/Pods-HelpDesk365.debug.xcconfig"; sourceTree = "<group>"; };
+		BBEB6B6EF4BB45F58318E5D3 /* Poppins-ExtraLight.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-ExtraLight.ttf"; path = "../src/assets/fonts/Poppins-ExtraLight.ttf"; sourceTree = "<group>"; };
+		BDEF2BDFED834292887C8808 /* Poppins-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-Regular.ttf"; path = "../src/assets/fonts/Poppins-Regular.ttf"; sourceTree = "<group>"; };
+		C624AA8B80444F1BBD43DF87 /* Roboto-Black.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Roboto-Black.ttf"; path = "../src/assets/fonts/Roboto-Black.ttf"; sourceTree = "<group>"; };
+		D37D1C402058448C8B1EDEE8 /* Poppins-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-Italic.ttf"; path = "../src/assets/fonts/Poppins-Italic.ttf"; sourceTree = "<group>"; };
+		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
+		FC3A8CEFEE814CDE85237426 /* Roboto-ThinItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Roboto-ThinItalic.ttf"; path = "../src/assets/fonts/Roboto-ThinItalic.ttf"; sourceTree = "<group>"; };
+		FF71C0AECA0B460786A8D8D8 /* Roboto-LightItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Roboto-LightItalic.ttf"; path = "../src/assets/fonts/Roboto-LightItalic.ttf"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		13B07F8C1A680F5B00A75B9A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E18979095B7521E864F02C11 /* libPods-HelpDesk365.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		13B07FAE1A68108700A75B9A /* HelpDesk365 */ = {
+			isa = PBXGroup;
+			children = (
+				13B07FB51A68108700A75B9A /* Images.xcassets */,
+				761780EC2CA45674006654EE /* AppDelegate.swift */,
+				13B07FB61A68108700A75B9A /* Info.plist */,
+				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
+				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
+			);
+			name = HelpDesk365;
+			sourceTree = "<group>";
+		};
+		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
+				2DF0844CC51882A766F1B646 /* libPods-HelpDesk365.a */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		5E5CAB0D836B4C0CA15FD53E /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				28D1E5B1D8A14F93B466C859 /* Poppins-Black.ttf */,
+				AAA04A4EE0F74931B98AE0B3 /* Poppins-BlackItalic.ttf */,
+				462DF2CA23614F6B8063778E /* Poppins-Bold.ttf */,
+				A7CBB59B9F88484A94E42B35 /* Poppins-BoldItalic.ttf */,
+				8CE28033EB98429681A26AEF /* Poppins-ExtraBold.ttf */,
+				AF5ADBB9D679470D8B1B74D9 /* Poppins-ExtraBoldItalic.ttf */,
+				BBEB6B6EF4BB45F58318E5D3 /* Poppins-ExtraLight.ttf */,
+				2B16503637DB4350B029234B /* Poppins-ExtraLightItalic.ttf */,
+				D37D1C402058448C8B1EDEE8 /* Poppins-Italic.ttf */,
+				60B95AB5E1E74515ADAA43A7 /* Poppins-Light.ttf */,
+				63F2344B6C8941CDA5747251 /* Poppins-LightItalic.ttf */,
+				A98FC000BC5E4B96A498F15F /* Poppins-Medium.ttf */,
+				8613B275D0D4415CAC547882 /* Poppins-MediumItalic.ttf */,
+				BDEF2BDFED834292887C8808 /* Poppins-Regular.ttf */,
+				2EE6A5EB307240B8939855FE /* Poppins-SemiBold.ttf */,
+				4403ECC7F7464F86A0D042A6 /* Poppins-SemiBoldItalic.ttf */,
+				7AF029B9F2404380A9D05B37 /* Poppins-Thin.ttf */,
+				42E184D5161A445EA8F07877 /* Poppins-ThinItalic.ttf */,
+				C624AA8B80444F1BBD43DF87 /* Roboto-Black.ttf */,
+				9AFD667E967A424A8228E0FB /* Roboto-BlackItalic.ttf */,
+				1DA01397FB8946DEB9B7DCDC /* Roboto-Bold.ttf */,
+				6B5A3754FF6944538512E2D6 /* Roboto-BoldItalic.ttf */,
+				9D6713B4EACF4EEA8D82DB24 /* Roboto-Italic.ttf */,
+				747CC2CBD0E0470EBA9BA9C9 /* Roboto-Light.ttf */,
+				FF71C0AECA0B460786A8D8D8 /* Roboto-LightItalic.ttf */,
+				92D9D461A9214791999F75E8 /* Roboto-Medium.ttf */,
+				5830B66645B2460B98237566 /* Roboto-MediumItalic.ttf */,
+				313E5ABE321F47E7942FA8FC /* Roboto-Regular.ttf */,
+				265293BE8F7F46F6999538B8 /* Roboto-Thin.ttf */,
+				FC3A8CEFEE814CDE85237426 /* Roboto-ThinItalic.ttf */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Libraries;
+			sourceTree = "<group>";
+		};
+		83CBB9F61A601CBA00E9B192 = {
+			isa = PBXGroup;
+			children = (
+				13B07FAE1A68108700A75B9A /* HelpDesk365 */,
+				832341AE1AAA6A7D00B99B32 /* Libraries */,
+				83CBBA001A601CBA00E9B192 /* Products */,
+				2D16E6871FA4F8E400B85C8A /* Frameworks */,
+				BBD78D7AC51CEA395F1C20DB /* Pods */,
+				5E5CAB0D836B4C0CA15FD53E /* Resources */,
+			);
+			indentWidth = 2;
+			sourceTree = "<group>";
+			tabWidth = 2;
+			usesTabs = 0;
+		};
+		83CBBA001A601CBA00E9B192 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				13B07F961A680F5B00A75B9A /* HelpDesk365.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				BA1A3BB913C11D9AA6B60E1E /* Pods-HelpDesk365.debug.xcconfig */,
+				5B8BF67D2BE412EF993B6783 /* Pods-HelpDesk365.release.xcconfig */,
+			);
+			path = Pods;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		13B07F861A680F5B00A75B9A /* HelpDesk365 */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "HelpDesk365" */;
+			buildPhases = (
+				D2E80D224CB93D63093A1CCA /* [CP] Check Pods Manifest.lock */,
+				13B07F871A680F5B00A75B9A /* Sources */,
+				13B07F8C1A680F5B00A75B9A /* Frameworks */,
+				13B07F8E1A680F5B00A75B9A /* Resources */,
+				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
+				5EADF805899C8B25943F0977 /* [CP] Embed Pods Frameworks */,
+				33B20929DE06D584025C26E3 /* [CP] Copy Pods Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HelpDesk365;
+			productName = HelpDesk365;
+			productReference = 13B07F961A680F5B00A75B9A /* HelpDesk365.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		83CBB9F71A601CBA00E9B192 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1210;
+				TargetAttributes = {
+					13B07F861A680F5B00A75B9A = {
+						LastSwiftMigration = 1120;
+					};
+				};
+			};
+			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "HelpDesk365" */;
+			compatibilityVersion = "Xcode 12.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 83CBB9F61A601CBA00E9B192;
+			productRefGroup = 83CBBA001A601CBA00E9B192 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				13B07F861A680F5B00A75B9A /* HelpDesk365 */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		13B07F8E1A680F5B00A75B9A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
+				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
+				7AC4A4CB43D6BEEA4DAF672E /* PrivacyInfo.xcprivacy in Resources */,
+				2732BB6ED60E4471BC5E4F50 /* Poppins-Black.ttf in Resources */,
+				E0E9F7372F0E4155A1D32CCA /* Poppins-BlackItalic.ttf in Resources */,
+				9636C63C70A64F24A03339D7 /* Poppins-Bold.ttf in Resources */,
+				8EB42C5D89FF4D4CBC54A825 /* Poppins-BoldItalic.ttf in Resources */,
+				669FD1F2BD0E4827A7DA20D0 /* Poppins-ExtraBold.ttf in Resources */,
+				C34FA70E2E664C8B821A0B40 /* Poppins-ExtraBoldItalic.ttf in Resources */,
+				A7BB32016C064A289C248EA8 /* Poppins-ExtraLight.ttf in Resources */,
+				B473A0C48F414303885F1AE9 /* Poppins-ExtraLightItalic.ttf in Resources */,
+				A35B7739F3C748F9B0E5A018 /* Poppins-Italic.ttf in Resources */,
+				5F902BA0E543432ABA711572 /* Poppins-Light.ttf in Resources */,
+				89FA1D7D409848538FD581FE /* Poppins-LightItalic.ttf in Resources */,
+				E3C2FDABEC244273AAB8A524 /* Poppins-Medium.ttf in Resources */,
+				9713B978071147F9B4F5E8B9 /* Poppins-MediumItalic.ttf in Resources */,
+				48F35B2E409249A28E7AB580 /* Poppins-Regular.ttf in Resources */,
+				52CF4460994D4C02A18BAC58 /* Poppins-SemiBold.ttf in Resources */,
+				26E29FFDDAEA4C26A0A656E6 /* Poppins-SemiBoldItalic.ttf in Resources */,
+				74DE5650D56C41209296BA36 /* Poppins-Thin.ttf in Resources */,
+				B0AA1D29EAB4435B97651BEB /* Poppins-ThinItalic.ttf in Resources */,
+				9D79A171312F4ABDABA5D8C5 /* Roboto-Black.ttf in Resources */,
+				C7E6FEF6AA2249AE9595DA1D /* Roboto-BlackItalic.ttf in Resources */,
+				9F170D43AE6E42D781AF4625 /* Roboto-Bold.ttf in Resources */,
+				B1D6FCE563C84B6893245315 /* Roboto-BoldItalic.ttf in Resources */,
+				A7BC051276B44A6F83E2395B /* Roboto-Italic.ttf in Resources */,
+				40387ED3AD8E4F7AA02491E6 /* Roboto-Light.ttf in Resources */,
+				BBB85F71D874425684C1DFE1 /* Roboto-LightItalic.ttf in Resources */,
+				0A515F04F57D42D1A063CCEA /* Roboto-Medium.ttf in Resources */,
+				09DA9934E86A461FA08356AF /* Roboto-MediumItalic.ttf in Resources */,
+				31ADF3C1EAF34465A24EA006 /* Roboto-Regular.ttf in Resources */,
+				74DAA2157510493AAF2F90B9 /* Roboto-Thin.ttf in Resources */,
+				A9007474AD844BE9A45A1BEF /* Roboto-ThinItalic.ttf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/.xcode.env.local",
+				"$(SRCROOT)/.xcode.env",
+			);
+			name = "Bundle React Native code and images";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\n\nWITH_ENVIRONMENT=\"$REACT_NATIVE_PATH/scripts/xcode/with-environment.sh\"\nREACT_NATIVE_XCODE=\"$REACT_NATIVE_PATH/scripts/react-native-xcode.sh\"\n\n/bin/sh -c \"$WITH_ENVIRONMENT $REACT_NATIVE_XCODE\"\n";
+		};
+		33B20929DE06D584025C26E3 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-HelpDesk365/Pods-HelpDesk365-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-HelpDesk365/Pods-HelpDesk365-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-HelpDesk365/Pods-HelpDesk365-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		5EADF805899C8B25943F0977 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-HelpDesk365/Pods-HelpDesk365-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-HelpDesk365/Pods-HelpDesk365-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-HelpDesk365/Pods-HelpDesk365-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		D2E80D224CB93D63093A1CCA /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-HelpDesk365-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		13B07F871A680F5B00A75B9A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				761780ED2CA45674006654EE /* AppDelegate.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		13B07F941A680F5B00A75B9A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = BA1A3BB913C11D9AA6B60E1E /* Pods-HelpDesk365.debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_BITCODE = NO;
+				INFOPLIST_FILE = HelpDesk365/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+					"-lc++",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.helpdesk365;
+				PRODUCT_NAME = HelpDesk365;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Debug;
+		};
+		13B07F951A680F5B00A75B9A /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5B8BF67D2BE412EF993B6783 /* Pods-HelpDesk365.release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = HelpDesk365/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+					"-lc++",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.helpdesk365;
+				PRODUCT_NAME = HelpDesk365;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_VERSION = 5.0;
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Release;
+		};
+		83CBBA201A601CBA00E9B192 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					/usr/lib/swift,
+					"$(inherited)",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"\"$(SDKROOT)/usr/lib/swift\"",
+					"\"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)\"",
+					"\"$(inherited)\"",
+				);
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CPLUSPLUSFLAGS = (
+					"$(OTHER_CFLAGS)",
+					"-DFOLLY_NO_CONFIG",
+					"-DFOLLY_MOBILE=1",
+					"-DFOLLY_USE_LIBCPP=1",
+					"-DFOLLY_CFG_NO_COROUTINES=1",
+					"-DFOLLY_HAVE_CLOCK_GETTIME=1",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					" ",
+				);
+				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
+				USE_HERMES = true;
+			};
+			name = Debug;
+		};
+		83CBBA211A601CBA00E9B192 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					/usr/lib/swift,
+					"$(inherited)",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"\"$(SDKROOT)/usr/lib/swift\"",
+					"\"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)\"",
+					"\"$(inherited)\"",
+				);
+				MTL_ENABLE_DEBUG_INFO = NO;
+				OTHER_CPLUSPLUSFLAGS = (
+					"$(OTHER_CFLAGS)",
+					"-DFOLLY_NO_CONFIG",
+					"-DFOLLY_MOBILE=1",
+					"-DFOLLY_USE_LIBCPP=1",
+					"-DFOLLY_CFG_NO_COROUTINES=1",
+					"-DFOLLY_HAVE_CLOCK_GETTIME=1",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					" ",
+				);
+				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
+				SDKROOT = iphoneos;
+				USE_HERMES = true;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "HelpDesk365" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				13B07F941A680F5B00A75B9A /* Debug */,
+				13B07F951A680F5B00A75B9A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "HelpDesk365" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				83CBBA201A601CBA00E9B192 /* Debug */,
+				83CBBA211A601CBA00E9B192 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 83CBB9F71A601CBA00E9B192 /* Project object */;
+}
