@@ -1,621 +1,645 @@
-import React, { useState, useRef, useLayoutEffect } from 'react';
-import { Text, StyleSheet, View, TouchableOpacity, Platform, Animated, Dimensions } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { createMaterialTopTabNavigator, MaterialTopTabBar } from '@react-navigation/material-top-tabs';
-import { Searchbar } from 'react-native-paper';
-import styles from './styles';
 
-const Tab = createMaterialTopTabNavigator();
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+import React, { useRef, useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  Alert,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  FlatList,
+} from "react-native";
+import { Formik } from "formik";
+import { pick } from "@react-native-documents/picker";
+import { RichEditor, RichToolbar, actions } from "react-native-pell-rich-editor";
+import { Dropdown } from "react-native-element-dropdown";
+import ImagePicker from "react-native-image-crop-picker";
+import Warning from "../../Alerts/Warning";
+import Success from "../../Alerts/Success";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import { fetchHR365HDMTicketFieldSettings } from "../../../backend/RequestAPI";
 
-const DynamicTicketTabs = ({ navigation, title = 'Tabs', tabs = [] }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isMounted, setIsMounted] = useState(false);
-  const translateX = useRef(new Animated.Value(SCREEN_WIDTH)).current;
+const CreateTicket = () => {
+  const richText = useRef();
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [warningMessage, setWarningMessage] = useState("");
+  const [services, setServices] = useState([]);
+  const [requestTypes, setRequestTypes] = useState([]);
+  const [priorities, setPriorities] = useState([]);
+  const [subServices, setSubServices] = useState([]);
+  const [FNames, setFNames] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [requestFormType, setRequestFormType] = useState('');
+  const requestFormTypeData = [
+    { label: "form1", value: "form1" },
+    { label: "form2", value: "form2" },
+    { label: "form3", value: "form3" },
+  ];
 
-  const openSearch = () => {
-    setIsMounted(true);
-    Animated.timing(translateX, { toValue: 0, duration: 250, useNativeDriver: true }).start();
-  };
-
-  const closeSearch = () => {
-    Animated.timing(translateX, { toValue: SCREEN_WIDTH, duration: 250, useNativeDriver: true }).start(() => {
-      setIsMounted(false);
-      setSearchQuery('');
-    });
-  };
-
-  const onRefresh = () => {
-    console.log('Refresh clicked');
-  };
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      title,
-      headerRight: () => (
-        <View style={styles.headerIcons}>
-          <TouchableOpacity onPress={onRefresh} style={styles.headerIconButton}>
-            <MaterialIcons name="refresh" size={24} color="#fff" />
-          </TouchableOpacity>
-        </View>
-      ),
-    });
-  }, [navigation, title]);
-
-  const opacity = translateX.interpolate({ inputRange: [0, SCREEN_WIDTH], outputRange: [1, 0], extrapolate: 'clamp' });
-
-  return (
-    <View style={{ flex: 1 }}>
-      <Tab.Navigator
-        tabBar={(props) => (
-          <View style={styles.tabBarWrapper}>
-            <View style={{ flex: 1 }}>
-              <MaterialTopTabBar {...props} />
-            </View>
-            <TouchableOpacity onPress={openSearch} style={styles.iconContainer}>
-              <Icon name="search" size={22} color="#026367" />
-            </TouchableOpacity>
-            {isMounted && (
-              <Animated.View style={[styles.searchOverlay, { transform: [{ translateX }], opacity }]}>
-                <Searchbar
-                  placeholder="Search"
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  style={styles.searchBar}
-                  inputStyle={styles.searchInput}
-                  iconColor="#026367"
-                  placeholderTextColor="#000"
-                  autoFocus
-                  autoCorrect={false}
-                  autoComplete="off"
-                  spellCheck={false}
-                />
-                <TouchableOpacity onPress={closeSearch} style={styles.closeIcon}>
-                  <Icon name="close" size={22} color="#026367" />
-                </TouchableOpacity>
-              </Animated.View>
-            )}
-          </View>
-        )}
-        screenOptions={({ route }) => ({
-          tabBarLabel: ({ focused, color }) => {
-            const tab = tabs.find(t => t.name === route.name);
-            return (
-              <Text style={[styles.tabLabel, { color, fontFamily: focused ? 'Roboto-Bold' : 'Roboto-Regular' }]}>
-                {tab?.label || route.name}
-              </Text>
-            );
-          },
-          tabBarActiveTintColor: '#000',
-          tabBarInactiveTintColor: '#000',
-          tabBarIndicatorStyle: { backgroundColor: '#026367', height: 2 },
-          tabBarStyle: { backgroundColor: 'transparent', elevation: 0 },
-          tabBarItemStyle: { width: 95, paddingHorizontal: 0 },
-          tabBarContentContainerStyle: { paddingHorizontal: 0 },
-        })}
-      >
-        {tabs.map((tab) => (
-          <Tab.Screen
-            key={tab.name}
-            name={tab.name}
-            component={tab.component}
-          />
-        ))}
-      </Tab.Navigator>
-    </View>
-  );
-};
-
-export default DynamicTicketTabs;
-
-
-
-import { StyleSheet, Platform } from 'react-native';
-
-const styles = StyleSheet.create({
-  headerIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  headerIconButton: {
-    paddingHorizontal: 8,
-  },
-  tabBarWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    position: 'relative',
-    height: 56,
-  },
-  iconContainer: {
-    paddingHorizontal: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tabLabel: {
-    fontSize: 16,
-    textTransform: 'none',
-    fontFamily: 'Roboto-Regular',
-  },
-  searchOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    height: 56,
-    right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    backgroundColor: '#f1f1f1ff',
-    zIndex: 1000,
-  },
-  searchBar: {
-    flex: 1,
-    borderRadius: 20,
-    elevation: 2,
-    backgroundColor: '#f9f9f9',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowRadius: 2,
-  },
-  searchInput: {
-    fontSize: 16,
-    marginBottom: Platform.OS === 'ios' ? 2 : 0,
-  },
-  closeIcon: {
-    marginLeft: 8,
-    padding: 6,
-  },
-});
-
-export default styles;
-
-
-import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Animated, Dimensions, StyleSheet, Platform, Modal } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { Searchbar } from 'react-native-paper';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-const CustomTabs = ({ navigation, title = 'Tabs', tabs: initialTabs = [] }) => {
-  const [activeTab, setActiveTab] = useState(initialTabs?.[0]?.name || '');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isMoreOptionsOpen, setIsMoreOptionsOpen] = useState(false);
-  const [tabs, setTabs] = useState(initialTabs); // Local state for tabs
-  const translateX = useRef(new Animated.Value(SCREEN_WIDTH)).current;
-  const contentTranslateX = useRef(new Animated.Value(0)).current;
-  const indicatorTranslateX = useRef(new Animated.Value(0)).current;
-  const prevTabIndex = useRef(0);
-  const [showIndicator, setShowIndicator] = useState(true);
-
-  const getActiveTabIndex = (tabName) => {
-    return tabs.findIndex((tab) => tab?.name === tabName);
-  };
-
-  const openSearch = () => {
-    setIsSearchOpen(true);
-    Animated.timing(translateX, {
-      toValue: 0,
-      duration: 250,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const closeSearch = () => {
-    Animated.timing(translateX, {
-      toValue: SCREEN_WIDTH,
-      duration: 250,
-      useNativeDriver: true,
-    }).start(() => {
-      setIsSearchOpen(false);
-      setSearchQuery('');
-    });
-  };
-
-  const onRefresh = () => {
-    console.log('Refresh clicked');
-  };
-
-  const toggleMoreOptions = () => {
-    setIsMoreOptionsOpen(!isMoreOptionsOpen);
-  };
-
-  React.useLayoutEffect(() => {
-    navigation?.setOptions?.({
-      title: title || 'Tabs',
-      headerRight: () => (
-        <View style={styles.headerIcons}>
-          <TouchableOpacity onPress={onRefresh} style={styles.headerIconButton}>
-            <MaterialIcons name="refresh" size={24} color="#fff" />
-          </TouchableOpacity>
-        </View>
-      ),
-    });
-  }, [navigation, title]);
-
-  const opacity = translateX.interpolate({
-    inputRange: [0, SCREEN_WIDTH],
-    outputRange: [1, 0],
-    extrapolate: 'clamp',
-  });
-
-  const handleTabChange = (tabName, index) => {
-    const currentIndex = getActiveTabIndex(activeTab);
-    const isMovingRight = index > currentIndex;
-    const slideOutDirection = isMovingRight ? -SCREEN_WIDTH : SCREEN_WIDTH;
-    const slideInDirection = isMovingRight ? SCREEN_WIDTH : -SCREEN_WIDTH;
-
-    let tabWidth = 95;
-    let targetIndicatorPosition = index * tabWidth;
-
-    // If the selected tab is from the modal (index >= 2 and tabs.length > 3)
-    if (tabs.length > 3 && index >= 2) {
-      // Swap the selected tab with the second tab (index 1)
-      const newTabs = [...tabs];
-      const temp = newTabs[1]; // Second tab
-      newTabs[1] = newTabs[index]; // Replace second tab with selected tab
-      newTabs[index] = temp; // Move original second tab to the modal
-      setTabs(newTabs);
-
-      // Since the selected tab is now at index 1, update the indicator position
-      targetIndicatorPosition = 1 * tabWidth;
-      index = 1; // Update index to reflect the new position of the selected tab
+  const fetchOptions = async () => {
+    try {
+      const servicesData = [
+        { label: "IT Support", value: "it_support" },
+        { label: "HR", value: "hr" },
+        { label: "Finance", value: "finance" },
+      ];
+      const requestTypesData = [
+        { label: "Issue", value: "issue" },
+        { label: "New Request", value: "new_request" },
+        { label: "Change", value: "change" },
+      ];
+      const prioritiesData = [
+        { label: "Low", value: "low" },
+        { label: "Medium", value: "medium" },
+        { label: "High", value: "high" },
+      ];
+      const subServicesData = [
+        { label: "Email Access", value: "email_access" },
+        { label: "System Access", value: "system_access" },
+        { label: "Other", value: "other" },
+      ];
+      setTimeout(() => {
+        setServices(servicesData);
+        setRequestTypes(requestTypesData);
+        setPriorities(prioritiesData);
+        setSubServices(subServicesData);
+        setLoading(false);
+      }, 1000);
+    } catch (error) {
+      Alert.alert("Error", "Failed to load dropdown options");
+      setLoading(false);
     }
-
-    const shouldAnimateIndicator = !(tabs.length > 3 && index >= 2);
-
-    // Update showIndicator based on whether a modal tab is selected
-    setShowIndicator(tabs.length <= 3 || index < 2);
-
-    Animated.parallel([
-      Animated.sequence([
-        Animated.timing(contentTranslateX, {
-          toValue: slideOutDirection,
-          duration: 250,
-          useNativeDriver: true,
-        }),
-        Animated.timing(contentTranslateX, {
-          toValue: slideInDirection,
-          duration: 0,
-          useNativeDriver: true,
-        }),
-        Animated.timing(contentTranslateX, {
-          toValue: 0,
-          duration: 250,
-          useNativeDriver: true,
-        }),
-      ]),
-      shouldAnimateIndicator &&
-        Animated.timing(indicatorTranslateX, {
-          toValue: targetIndicatorPosition,
-          duration: 250,
-          useNativeDriver: true,
-        }),
-    ].filter(Boolean)).start();
-
-    prevTabIndex.current = index;
-    setActiveTab(tabName);
   };
 
-  const renderTabContent = () => {
-    const activeTabData = tabs?.find?.((tab) => tab?.name === activeTab);
-    return activeTabData?.component ? (
-      <Animated.View
-        style={[
-          styles.tabContent,
-          {
-            transform: [{ translateX: contentTranslateX }],
-            opacity: contentTranslateX.interpolate({
-              inputRange: [-SCREEN_WIDTH, 0, SCREEN_WIDTH],
-              outputRange: [0, 1, 0],
-              extrapolate: 'clamp',
-            }),
-          },
-        ]}
-      >
-        {React.createElement(activeTabData.component)}
-      </Animated.View>
-    ) : null;
+  const fetchTicketFields = async () => {
+    const fetchedData = await fetchHR365HDMTicketFieldSettings();
+        console.log(fetchedData, 'extractedFields===')
+
+    const extractedFieldsOfUser = fetchedData?.TicketFieldsForUser?.split(',')
+    const transformedFieldsOfUser = extractedFieldsOfUser?.map((i)=>{
+      return {
+          DisplayName: i,
+          InternalName: i,
+          Type: i,
+          values: i,
+          DefultValue: i,
+          ListName: i,
+          SelectedColumnName: i,
+          ChoiceType: i,
+          ShowType: i || "",
+        };
+    });
+    console.log(transformedFieldsOfUser, 'extractedFields===')
+
+    setFNames(transformedFieldsOfUser);
+  }
+
+  useEffect(() => {
+    fetchOptions();
+    fetchTicketFields();
+  }, []);
+
+  const openGallery = async () => {
+    try {
+      const image = await ImagePicker.openPicker({
+        width: 300,
+        height: 400,
+        cropping: true,
+        includeBase64: true,
+      });
+      const b64 = `data:${image.mime};base64,${image.data}`;
+      richText.current?.insertImage(b64);
+    } catch (error) {
+      if (error.code !== 'E_PICKER_CANCELLED') {
+        console.log('Gallery Error: ', error);
+      }
+    }
   };
 
-  const visibleTabs = tabs?.length <= 3 ? tabs : tabs?.slice?.(0, 2) ?? [];
-  const moreTabs = tabs?.length > 3 ? tabs?.slice?.(2) ?? [] : [];
+  const openCamera = async () => {
+    try {
+      const image = await ImagePicker.openCamera({
+        width: 300,
+        height: 400,
+        cropping: true,
+        includeBase64: true,
+      });
+      const b64 = `data:${image.mime};base64,${image.data}`;
+      richText.current?.insertImage(b64);
+    } catch (error) {
+      if (error.code !== 'E_PICKER_CANCELLED') {
+        console.log('Camera Error: ', error);
+      }
+    }
+  };
+
+  const insertImage = () => {
+    Alert.alert(
+      'Insert Image',
+      'Choose source',
+      [
+        {
+          text: 'Camera',
+          onPress: openCamera,
+        },
+        {
+          text: 'Gallery',
+          onPress: openGallery,
+        },
+        { text: 'Cancel', style: 'cancel' },
+      ],
+      { cancelable: true },
+    );
+  };
+
+  const handleSubmitForm = async (values, { resetForm }) => {
+    if (
+      !values.title ||
+      !values.service ||
+      !values.requestType ||
+      !values.priority ||
+      !values.subService ||
+      !values.description
+    ) {
+      setWarningMessage("Please fill all required fields");
+      return;
+    }
+    setShowSuccess(true);
+    resetForm();
+  };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.tabBarWrapper}>
-        <View style={styles.tabBar}>
-          {visibleTabs?.map?.((tab, index) => (
-            <TouchableOpacity
-              key={tab?.name ?? `tab-${index}`}
-              style={[styles.tabItem, activeTab === tab?.name && styles.activeTab]}
-              onPress={() => handleTabChange(tab?.name, index)}
-            >
-              <Text
-                style={[
-                  styles.tabLabel,
-                  activeTab === tab?.name ? styles.activeTabLabel : styles.inactiveTabLabel,
-                ]}
-              >
-                {tab?.label || tab?.name || 'Tab'}
-              </Text>
-            </TouchableOpacity>
-          ))}
-          {tabs?.length > 3 && (
-            <TouchableOpacity style={[styles.tabItem,styles.moretabItem]} onPress={toggleMoreOptions}>
-              <Icon name="ellipsis-horizontal" size={22} color="#026367" />
-            </TouchableOpacity>
-          )}
-          {showIndicator && (
-            <Animated.View
-              style={[
-                styles.tabIndicator,
-                {
-                  transform: [{ translateX: indicatorTranslateX }],
-                },
-              ]}
-            />
-          )}
-        </View>
-        <TouchableOpacity onPress={openSearch} style={styles.iconContainer}>
-          <Icon name="search" size={22} color="#026367" />
-        </TouchableOpacity>
-        {isSearchOpen && (
-          <Animated.View style={[styles.searchOverlay, { transform: [{ translateX }], opacity }]}>
-            <Searchbar
-              placeholder="Search"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              style={styles.searchBar}
-              inputStyle={styles.searchInput}
-              iconColor="#026367"
-              placeholderTextColor="#000"
-              autoFocus
-              autoCorrect={false}
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <TouchableOpacity onPress={closeSearch} style={styles.closeIcon}>
-              <Icon name="close" size={22} color="#026367" />
-            </TouchableOpacity>
-          </Animated.View>
-        )}
-      </View>
-      <Modal
-        visible={isMoreOptionsOpen}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={toggleMoreOptions}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={toggleMoreOptions}
+    <View style={{ flex: 1, backgroundColor: "#fff" }}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Formik
+          initialValues={{
+            title: "",
+            service: "",
+            requestType: "",
+            priority: "",
+            subServicel1: "",
+            subServicel2: "",
+            subServicel3: "",
+            assetDetails: "",
+            description: "",
+            teams: "",
+            attachments: [],
+          }}
+          onSubmit={handleSubmitForm}
         >
-          <View style={styles.modalContent}>
-            {moreTabs?.map?.((tab, index) => (
-              <TouchableOpacity
-                key={tab?.name ?? `more-tab-${index}`}
-                style={styles.modalItem}
-                onPress={() => {
-                  handleTabChange(tab?.name, index + 2);
-                  setIsMoreOptionsOpen(false);
-                }}
-              >
-                <Text style={styles.modalItemText}>{tab?.label || tab?.name || 'Tab'}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
-      <View style={styles.tabContentContainer}>{renderTabContent()}</View>
+          {({ handleChange, handleBlur, handleSubmit, setFieldValue, values }) => (
+            <>
+              <Text style={[styles.label, {textAlign: 'center'}]}>Select Ticket Request Form</Text>
+              <Dropdown
+                style={styles.dropdown}
+                placeholderStyle={styles.placeholder}
+                selectedTextStyle={styles.selectedText}
+                data={requestFormTypeData}
+                labelField="label"
+                valueField="value"
+                placeholder="Select Ticket Request Form"
+                value={requestFormType}
+                itemContainerStyle={styles.dropdownItemContainer} 
+                onChange={(item) => setRequestFormType(item.value)}
+                renderRightIcon={() => (
+                  <Ionicons name="chevron-down" size={18} color="#333" />
+                )}
+                containerStyle={styles.dropdownContainer}
+                itemTextStyle={styles.dropdownItem}
+              />
+              {
+                FNames?.map((item, index) => {
+                  return item.InternalName == "Title" ? 
+                    <>
+                      <Text style={styles.label}>Title</Text>
+                      <TextInput
+                        style={styles.input}
+                        onChangeText={handleChange("title")}
+                        onBlur={handleBlur("title")}
+                        value={values.title}
+                        placeholder="Enter Title"
+                        placeholderTextColor="#333333"
+                      />
+                    </>
+                  : item.InternalName == "Priority" ? 
+                    <>
+                      <Text style={styles.label}>Priority</Text>
+                      <Dropdown
+                        style={styles.dropdown}
+                        placeholderStyle={styles.placeholder}
+                        selectedTextStyle={styles.selectedText}
+                        data={priorities}
+                        labelField="label"
+                        valueField="value"
+                        placeholder="Select Priority"
+                        value={values.priority}
+                        onChange={(item) => setFieldValue("priority", item.value)}
+                        renderRightIcon={() => (
+                          <Ionicons name="chevron-down" size={18} color="#333" />
+                        )}
+                        containerStyle={styles.dropdownContainer}
+                        itemTextStyle={styles.dropdownItem}
+                      />
+                    </>
+                  : item.InternalName == "Request Type" ? 
+                    <>
+                      <Text style={styles.label}>Request Type</Text>
+                      <Dropdown
+                        style={styles.dropdown}
+                        placeholderStyle={styles.placeholder}
+                        selectedTextStyle={styles.selectedText}
+                        data={requestTypes}
+                        labelField="label"
+                        valueField="value"
+                        placeholder="Select Request Type"
+                        value={values.requestType}
+                        onChange={(item) => setFieldValue("requestType", item.value)}
+                        renderRightIcon={() => (
+                          <Ionicons name="chevron-down" size={18} color="#333" />
+                        )}
+                        containerStyle={styles.dropdownContainer}
+                        itemTextStyle={styles.dropdownItem}
+                      />
+                    </>
+                  : item.InternalName == "Services" ? 
+                    <>
+                      <Text style={styles.label}>Service</Text>
+                      <Dropdown
+                        style={styles.dropdown}
+                        placeholderStyle={styles.placeholder}
+                        selectedTextStyle={styles.selectedText}
+                        data={services}
+                        labelField="label"
+                        valueField="value"
+                        placeholder="Select Service"
+                        value={values.service}
+                        onChange={(item) => setFieldValue("service", item.value)}
+                        renderRightIcon={() => (
+                          <Ionicons name="chevron-down" size={18} color="#333" />
+                        )}
+                        containerStyle={styles.dropdownContainer}
+                        itemTextStyle={styles.dropdownItem}
+                      />
+                    </>
+                  : item.InternalName == "SubServices" ||
+                    item.InternalName == "Sub Services" ||
+                    item.InternalName == "Sub Services L1" ? 
+                    <>
+                      <Text style={styles.label}>Sub Service L1</Text>
+                      <Dropdown
+                        style={styles.dropdown}
+                        placeholderStyle={styles.placeholder}
+                        selectedTextStyle={styles.selectedText}
+                        data={subServices}
+                        labelField="label"
+                        valueField="value"
+                        placeholder="Select Sub Service"
+                        value={values.subServicel1}
+                        onChange={(item) => setFieldValue("subServicel1", item.value)}
+                        renderRightIcon={() => (
+                          <Ionicons name="chevron-down" size={18} color="#333" />
+                        )}
+                        containerStyle={styles.dropdownContainer}
+                        itemTextStyle={styles.dropdownItem}
+                      />
+                    </>
+                  : item.InternalName == "SubServiceL2" ||
+                  item.InternalName == "Sub Services L2" ? 
+                    <>
+                      <Text style={styles.label}>Sub Service L2</Text>
+                      <Dropdown
+                        style={styles.dropdown}
+                        placeholderStyle={styles.placeholder}
+                        selectedTextStyle={styles.selectedText}
+                        data={subServices}
+                        labelField="label"
+                        valueField="value"
+                        placeholder="Select Sub Service"
+                        value={values.subServicel2}
+                        onChange={(item) => setFieldValue("subServicel2", item.value)}
+                        renderRightIcon={() => (
+                          <Ionicons name="chevron-down" size={18} color="#333" />
+                        )}
+                        containerStyle={styles.dropdownContainer}
+                        itemTextStyle={styles.dropdownItem}
+                      />
+                    </>
+                  : item.InternalName == "SubServiceL3" ||
+                  item.InternalName == "Sub Services L3" ? 
+                    <>
+                      <Text style={styles.label}>Sub Service L3</Text>
+                      <Dropdown
+                        style={styles.dropdown}
+                        placeholderStyle={styles.placeholder}
+                        selectedTextStyle={styles.selectedText}
+                        data={subServices}
+                        labelField="label"
+                        valueField="value"
+                        placeholder="Select Sub Service"
+                        value={values.subServicel3}
+                        onChange={(item) => setFieldValue("subServicel3", item.value)}
+                        renderRightIcon={() => (
+                          <Ionicons name="chevron-down" size={18} color="#333" />
+                        )}
+                        containerStyle={styles.dropdownContainer}
+                        itemTextStyle={styles.dropdownItem}
+                      />
+                    </>
+                  : item.InternalName == "Asset detail" ? 
+                    <>
+                      <Text style={styles.label}>Asset Detail</Text>
+                      <Dropdown
+                        style={styles.dropdown}
+                        placeholderStyle={styles.placeholder}
+                        selectedTextStyle={styles.selectedText}
+                        data={subServices}
+                        labelField="label"
+                        valueField="value"
+                        placeholder="Select Asset"
+                        value={values.assetDetails}
+                        onChange={(item) => setFieldValue("assetDetails", item.value)}
+                        renderRightIcon={() => (
+                          <Ionicons name="chevron-down" size={18} color="#333" />
+                        )}
+                        containerStyle={styles.dropdownContainer}
+                        itemTextStyle={styles.dropdownItem}
+                      />
+                    </>
+                  : item.InternalName == "Teams" ? 
+                    <>
+                      <Text style={styles.label}>Teams</Text>
+                      <Dropdown
+                        style={styles.dropdown}
+                        placeholderStyle={styles.placeholder}
+                        selectedTextStyle={styles.selectedText}
+                        data={subServices}
+                        labelField="label"
+                        valueField="value"
+                        placeholder="Select Team"
+                        value={values.teams}
+                        onChange={(item) => setFieldValue("teams", item.value)}
+                        renderRightIcon={() => (
+                          <Ionicons name="chevron-down" size={18} color="#333" />
+                        )}
+                        containerStyle={styles.dropdownContainer}
+                        itemTextStyle={styles.dropdownItem}
+                      />
+                    </>
+                  : item.InternalName == "Ticket Description" ? 
+                    <>
+                      <Text style={styles.label}>Description</Text>
+                      <RichEditor
+                        ref={richText}
+                        style={styles.richInput}
+                        placeholder="Enter ticket description..."
+                        placeholderTextColor="#333333"
+                        initialContentHTML={values.description}
+                        onChange={(text) => setFieldValue("description", text)}
+                        editorStyle={{
+                          backgroundColor: "#fff",
+                          color: "#333333",
+                          placeholderColor: "#333333",
+                          cssText: "body {font-family: Roboto; font-size: 16px;}",
+                        }}
+                      />
+                      <RichToolbar
+                        editor={richText}
+                        actions={[
+                          actions.setBold,
+                          actions.setItalic,
+                          actions.setUnderline,
+                          actions.insertOrderedList,
+                          actions.insertBulletsList,
+                          actions.heading1,
+                          actions.heading2,
+                          actions.heading3,
+                          actions.setParagraph,
+                          actions.insertLink,
+                          actions.insertImage,
+                          actions.insertVideo,
+                          actions.insertCode,
+                          actions.undo,
+                          actions.redo,
+                        ]}
+                        onPressAddImage={insertImage}
+                        iconMap={{
+                          [actions.heading1]: ({ tintColor }) => (
+                            <Text style={{ color: "#333333", fontWeight: 600, fontSize: 18, }}>H1</Text>
+                          ),
+                          [actions.heading2]: ({ tintColor }) => (
+                            <Text style={{ color: "#333333", fontWeight: 600, fontSize: 18,}}>H2</Text>
+                          ),
+                          [actions.heading3]: ({ tintColor }) => (
+                            <Text style={{ color: "#333333", fontWeight: 600, fontSize: 18, }}>H3</Text>
+                          ),
+                          [actions.setParagraph]: ({ tintColor }) => (
+                            <Text style={{ color: "#333333", fontWeight: 600, fontSize: 18, }}>P</Text>
+                          ),
+                          [actions.insertCode]: ({ tintColor }) => (
+                            <Text style={{ color: "#333333", fontWeight: 600, fontSize: 18, }}>{`</>`}</Text>
+                          ),
+                        }}
+                        iconTint="#000"
+                      />
+                    </> 
+                  :  ""
+                })
+              }
+              <View style={styles.submissionWrapper}>
+                <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
+                  <Text style={styles.submitBtnText}>Create Ticket</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.attachmentBtn}
+                  onPress={async () => {
+                    try {
+                      const result = await pick({
+                        allowMultiSelection: true,
+                        type: ["image/*"],
+                      });
+                      if (result && result.length > 0) {
+                        setFieldValue("attachments", [...values.attachments, ...result]);
+                      }
+                    } catch (err) {
+                      Alert.alert("File Error", err.message);
+                    }
+                  }}
+                >
+                  <Ionicons name="attach" size={26} color="#026367" style={{ marginLeft: 8 }} />
+                </TouchableOpacity>
+              </View>
+
+              {values.attachments.length > 0 && (
+                <View style={[styles.attachmentsContainer, { marginBottom: 50 }]}>
+                  {values.attachments.map((item, index) => (
+                    <View key={index} style={styles.attachmentItem}>
+                      <Text style={styles.attachmentName} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => {
+                          const updated = values?.attachments?.filter((_, i) => i !== index);
+                          setFieldValue("attachments", updated);
+                        }}
+                      >
+                        <Ionicons name="close" size={21} color="#026367" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </>
+          )}
+        </Formik>
+      </ScrollView>
+      <Warning
+        message={warningMessage}
+        visible={!!warningMessage}
+        onHide={() => setWarningMessage("")}
+      />
+      <Success
+        message="Ticket created successfully!"
+        visible={showSuccess}
+        onHide={() => setShowSuccess(false)}
+      />
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  headerIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  headerIconButton: {
-    paddingHorizontal: 8,
-  },
-  tabBarWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    position: 'relative',
-    height: 56,
-    backgroundColor: 'transparent',
-  },
-  tabBar: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    position: 'relative',
-  },
-  tabItem: {
-    width: 97,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  moretabItem: {
-    width: 60,
-  },
-  tabLabel: {
-    fontSize: 16,
-    textTransform: 'none',
-    fontFamily: 'Roboto-Regular',
-  },
-  activeTabLabel: {
-    color: '#000',
-    fontFamily: 'Roboto-Bold',
-  },
-  inactiveTabLabel: {
-    color: '#000',
-    fontFamily: 'Roboto-Regular',
-  },
-  tabIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    height: 2,
-    width: 100,
-    backgroundColor: '#026367',
-  },
-  iconContainer: {
-    paddingHorizontal: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  searchOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    backgroundColor: '#f1f1f1ff',
-    zIndex: 1000,
-  },
-  searchBar: {
-    flex: 1,
-    borderRadius: 20,
-    elevation: 2,
-    backgroundColor: '#f9f9f9',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 2,
-  },
-  searchInput: {
-    fontSize: 16,
-    marginBottom: Platform.OS === 'ios' ? 2 : 0,
-  },
-  closeIcon: {
-    marginLeft: 8,
-    padding: 6,
-  },
-  tabContentContainer: {
-    flex: 1,
-    overflow: 'hidden',
-  },
-  tabContent: {
-    flex: 1,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    marginTop: 90,
-    marginLeft: 170,
-    borderRadius: 8,
-    paddingVertical: 8,
-    width: 130,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-  },
-  modalItem: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-  },
-  modalItemText: {
-    fontSize: 16,
-    color: '#000',
-    fontFamily: 'Roboto-Regular',
-  },
-});
-
-export default CustomTabs;
-
-
-
-import React, { useState } from 'react';
-import { View, StyleSheet, Text, Button, Alert } from 'react-native';
-import AzureAuth from 'react-native-azure-auth';
-
-const azureAuth = new AzureAuth({
-  clientId: 'fd715808-1c9c-4c98-9ddd-6c652f4f0da4',
-  tenant: 'db23acaf-be24-4d51-9d6e-5a516262697c',
-  redirectUri: 'msauth://com.helpdesk365/VzSiQcXRmi2kyjzcA%2BmYLEtbGVs%3D'
-});
-
-const LoginScreen = ({ title }) => {
-  const [user, setUser] = useState(null);
-
-  const signIn = async () => {
-    try {
-      const tokens = await azureAuth.webAuth.authorize({
-        scope: 'openid profile User.Read'
-      });
-      const userInfo = await azureAuth.auth.msGraphRequest({
-        token: tokens.accessToken,
-        path: '/me'
-      });
-      setUser({ name: userInfo.displayName, id: tokens.userId });
-      Alert.alert('Success', `Logged in as ${userInfo.displayName}`);
-    } catch (error) {
-      console.log('Authorization Error:', error);
-      Alert.alert('Error', JSON.stringify(error, null, 2));
-    }
-  };
-
-  const signOut = async () => {
-    try {
-      await azureAuth.webAuth.clearSession();
-      setUser(null);
-      Alert.alert('Success', 'Logged out successfully');
-    } catch (error) {
-      console.log('Sign out Error:', JSON.stringify(error, null, 2));
-      Alert.alert('Error', 'Failed to sign out. Please try again.');
-    }
-  };
-
-  return (
-    <View style={styles.container}>
-      {user ? (
-        <>
-          <Text style={styles.text}>Welcome, {user.name}</Text>
-          <Button title="Sign Out" onPress={signOut} color="#026367" />
-        </>
-      ) : (
-        <Button title="Sign In with Azure" onPress={signIn} color="#026367" />
-      )}
-    </View>
-  );
-};
-
-export default LoginScreen;
+export default CreateTicket;
 
 const styles = StyleSheet.create({
   container: {
+    padding: 20,
+    backgroundColor: "#fff",
+    flexGrow: 1,
+    paddingBottom: 100,
+  },
+  loader: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
   },
   text: {
-    fontSize: 25,
-    marginBottom: 20,
+    fontFamily: "Roboto",
+    fontSize: 14,
+    color: "#333333",
+  },
+  label: {
+    fontFamily: "Roboto",
+    fontWeight: "bold",
+    fontSize: 17,
+    marginTop: 1,
+    marginBottom: 5,
+    color: "#333333",
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    backgroundColor: "#fff",
+    fontFamily: "Roboto",
+    color: "#333333",
+    marginBottom: 6,
+  },
+  dropdown: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    paddingHorizontal: 10,
+    height: 44,
+    backgroundColor: "#fff",
+    marginBottom: 6,
+  },
+  placeholder: {
+    color: "#333333",
+    fontSize: 16,
+    fontFamily: "Roboto",
+  },
+  selectedText: {
+    fontSize: 16,
+    color: "#333333",
+    fontFamily: "Roboto",
+  },
+  dropdownContainer: {
+    backgroundColor: "#fff",
+    padding: 0,
+  },
+  dropdownItem: {
+    color: "#333333",
+    fontFamily: "Roboto",
+    fontSize: 16,
+  },
+  dropdownItemContainer: {
+    padding: 0,
+  },
+  richInput: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    minHeight: 120,
+    backgroundColor: "#fff",
+    padding: 8,
+    fontFamily: "Roboto",
+    color: "#333333",
+  },
+  attachmentText: {
+    color: "#fff",
+    fontFamily: "Roboto",
+    fontSize: 16,
+  },
+  submissionWrapper: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 15,
+  },
+  submitBtn: {
+    backgroundColor: "#026367",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    alignItems: "center",
+    justifyContent: "center",
+    width: "85%",
+  },
+  submitBtnText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+    fontFamily: "Roboto",
+  },
+  attachmentBtn: {
+    padding: 12,
+    borderRadius: 6,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    width: "15%",
+  },
+  attachmentsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  attachmentItem: {
+    width: '49%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f5f5f5',
+    borderColor: '#ccc',
+    borderWidth: 1,
+    padding: 10,
+    marginBottom: 6,
+  },
+  attachmentName: {
+    flex: 1,
+    marginRight: 8,
+    color: '#333',
   },
 });

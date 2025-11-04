@@ -32,7 +32,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     return true
   }
 
-  // ✅ Corrected method for deep linking
   func application(
     _ application: UIApplication,
     open url: URL,

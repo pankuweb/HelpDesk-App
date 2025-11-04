@@ -1,9 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Animated, Dimensions, StyleSheet, Platform, Modal, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, Animated, Dimensions, Modal } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { Searchbar } from 'react-native-paper';
 import styles from './styles';
+import { clearLoginData } from '../../redux/slices/loginSlice';
+import { useDispatch } from "react-redux";
+import moment from 'moment';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -18,7 +21,40 @@ const CustomTabs = ({ navigation, title = 'Tabs', tabs: initialTabs = [] }) => {
   const indicatorTranslateX = useRef(new Animated.Value(0)).current;
   const prevTabIndex = useRef(0);
   const [showIndicator, setShowIndicator] = useState(true);
-  const tabWidths = useRef({}).current;
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    setTabs(initialTabs);
+  }, [initialTabs]);
+
+  const filterTickets = (tickets, query) => {
+    if (!query) return tickets;
+    const lowerQuery = query?.toLowerCase();
+
+    return tickets?.filter((ticket) =>
+      ticket?.TicketSeqnumber?.toLowerCase()?.includes(lowerQuery) ||
+      ticket?.DepartmentName?.toLowerCase()?.includes(lowerQuery) ||
+      ticket?.Title?.toLowerCase()?.includes(lowerQuery) ||
+      ticket?.TicketDescription?.toLowerCase()?.includes(lowerQuery) ||
+      ticket?.AssignedTo?.Title?.toLowerCase()?.includes(lowerQuery) ||
+      ticket?.RequesterName?.toLowerCase()?.includes(lowerQuery) ||
+      moment(ticket?.Created)?.format('MM/DD/YYYY')?.includes(lowerQuery)
+    );
+  };
+
+  const getFilteredTabs = () => {
+    return tabs.map((tab) => ({
+      ...tab,
+      filteredData: filterTickets(tab?.data || [], searchQuery),
+      label: `${tab?.name} (${filterTickets(tab?.data || [], searchQuery)?.length})`,
+    }));
+  };
+
+  const [filteredTabs, setFilteredTabs] = useState(getFilteredTabs());
+
+  useEffect(() => {
+    setFilteredTabs(getFilteredTabs());
+  }, [searchQuery, tabs]);
 
   const getActiveTabIndex = (tabName) => {
     return tabs.findIndex((tab) => tab?.name === tabName);
@@ -55,12 +91,16 @@ const CustomTabs = ({ navigation, title = 'Tabs', tabs: initialTabs = [] }) => {
     });
   };
 
-  const onRefresh = () => {
-    console.log('Refresh clicked');
-  };
-
   const toggleMoreOptions = () => {
     setIsMoreOptionsOpen(!isMoreOptionsOpen);
+  };
+
+  const onSignOut = () => {
+    dispatch(clearLoginData());
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Login' }],
+    });
   };
 
   React.useLayoutEffect(() => {
@@ -68,20 +108,18 @@ const CustomTabs = ({ navigation, title = 'Tabs', tabs: initialTabs = [] }) => {
       title: title || 'Tabs',
       headerRight: () => (
         <View style={styles.headerIcons}>
-          <TouchableOpacity onPress={onRefresh} style={styles.headerIconButton}>
-            <MaterialIcons name="refresh" size={24} color="#fff" />
+          <TouchableOpacity onPress={onSignOut} style={styles.headerIconButton}>
+            <MaterialIcons name="logout" size={22} color="#fff" />
           </TouchableOpacity>
         </View>
       ),
     });
   }, [navigation, title]);
-
   const opacity = translateX.interpolate({
     inputRange: [0, SCREEN_WIDTH],
     outputRange: [1, 0],
     extrapolate: 'clamp',
   });
-
   const handleTabChange = (tabName, index) => {
     const currentIndex = getActiveTabIndex(activeTab);
     const isMovingRight = index > currentIndex;
@@ -90,23 +128,23 @@ const CustomTabs = ({ navigation, title = 'Tabs', tabs: initialTabs = [] }) => {
 
     let targetIndicatorPosition = 0;
     for (let i = 0; i < index; i++) {
-      const tabLabel = tabs[i]?.label || tabs[i]?.name || 'Tab';
+      const tabLabel = filteredTabs?.[i]?.label || filteredTabs?.[i]?.name || 'Tab';
       targetIndicatorPosition += calculateTabWidth(tabLabel);
     }
 
-    if (tabs.length > 3 && index >= 2) {
+    if (tabs?.length > 3 && index >= 2) {
       const newTabs = [...tabs];
-      const temp = newTabs[1];
-      newTabs[1] = newTabs[index];
+      const temp = newTabs?.[1];
+      newTabs[1] = newTabs?.[index];
       newTabs[index] = temp;
       setTabs(newTabs);
-      targetIndicatorPosition = calculateTabWidth(tabs[0]?.label || tabs[0]?.name || 'Tab');
+      targetIndicatorPosition = calculateTabWidth(filteredTabs?.[0]?.label || filteredTabs?.[0]?.name || 'Tab');
       index = 1;
     }
 
-    const shouldAnimateIndicator = !(tabs.length > 3 && index >= 2);
+    const shouldAnimateIndicator = !(tabs?.length > 3 && index >= 2);
 
-    setShowIndicator(tabs.length <= 3 || index < 2);
+    setShowIndicator(tabs?.length <= 3 || index < 2);
 
     Animated.parallel([
       Animated.sequence([
@@ -139,7 +177,7 @@ const CustomTabs = ({ navigation, title = 'Tabs', tabs: initialTabs = [] }) => {
   };
 
   const renderTabContent = () => {
-    const activeTabData = tabs?.find?.((tab) => tab?.name === activeTab);
+    const activeTabData = filteredTabs?.find?.((tab) => tab?.name === activeTab);
     return activeTabData?.component ? (
       <Animated.View
         style={[
@@ -154,13 +192,13 @@ const CustomTabs = ({ navigation, title = 'Tabs', tabs: initialTabs = [] }) => {
           },
         ]}
       >
-        {React.createElement(activeTabData.component)}
+        {React.createElement(activeTabData?.component, { tickets: activeTabData?.filteredData || [], onRefresh: activeTabData?.onRefresh,loading: activeTabData?.loading })}
       </Animated.View>
     ) : null;
   };
 
-  const visibleTabs = tabs?.length <= 3 ? tabs : tabs?.slice?.(0, 2) ?? [];
-  const moreTabs = tabs?.length > 3 ? tabs?.slice?.(2) ?? [] : [];
+  const visibleTabs = filteredTabs?.length <= 3 ? filteredTabs : filteredTabs?.slice?.(0, 2) ?? [];
+  const moreTabs = filteredTabs?.length > 3 ? filteredTabs?.slice?.(2) ?? [] : [];
 
   return (
     <View style={styles.container}>
@@ -186,7 +224,7 @@ const CustomTabs = ({ navigation, title = 'Tabs', tabs: initialTabs = [] }) => {
               </TouchableOpacity>
             );
           })}
-          {tabs?.length > 3 && (
+          {filteredTabs?.length > 3 && (
             <TouchableOpacity style={[styles.tabItem, styles.moretabItem]} onPress={toggleMoreOptions}>
               <Icon name="ellipsis-horizontal" size={22} color="#026367" />
             </TouchableOpacity>
@@ -197,7 +235,7 @@ const CustomTabs = ({ navigation, title = 'Tabs', tabs: initialTabs = [] }) => {
                 styles.tabIndicator,
                 {
                   transform: [{ translateX: indicatorTranslateX }],
-                  width: calculateIndicatorWidth(tabs[prevTabIndex.current]?.label || tabs[prevTabIndex.current]?.name || 'Tab'),
+                  width: calculateIndicatorWidth(filteredTabs?.[prevTabIndex?.current]?.label || filteredTabs?.[prevTabIndex?.current]?.name || 'Tab'),
                 },
               ]}
             />

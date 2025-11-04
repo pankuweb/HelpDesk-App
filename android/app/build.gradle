@@ -87,6 +87,7 @@ android {
         manifestPlaceholders = [
             appAuthRedirectScheme: "com.helpdesk365"
         ]
+        multiDexEnabled true
     }
     signingConfigs {
         debug {

@@ -37,52 +37,22 @@
 	<true/>
 	<key>UIAppFonts</key>
 	<array>
-		<string>Fonts/AntDesign.ttf</string>
-		<string>Fonts/Entypo.ttf</string>
-		<string>Fonts/EvilIcons.ttf</string>
-		<string>Fonts/Feather.ttf</string>
-		<string>Fonts/FontAwesome.ttf</string>
-		<string>Fonts/FontAwesome5_Brands.ttf</string>
-		<string>Fonts/FontAwesome5_Regular.ttf</string>
-		<string>Fonts/FontAwesome5_Solid.ttf</string>
-		<string>Fonts/Fontisto.ttf</string>
-		<string>Fonts/Foundation.ttf</string>
-		<string>Fonts/Ionicons.ttf</string>
-		<string>Fonts/MaterialCommunityIcons.ttf</string>
-		<string>Fonts/MaterialIcons.ttf</string>
-		<string>Fonts/Octicons.ttf</string>
-		<string>Fonts/SimpleLineIcons.ttf</string>
-		<string>Fonts/Zocial.ttf</string>
-		<string>Fonts/Poppins-Black.ttf</string>
-		<string>Fonts/Poppins-BlackItalic.ttf</string>
-		<string>Fonts/Poppins-Bold.ttf</string>
-		<string>Fonts/Poppins-BoldItalic.ttf</string>
-		<string>Fonts/Poppins-ExtraBold.ttf</string>
-		<string>Fonts/Poppins-ExtraBoldItalic.ttf</string>
-		<string>Fonts/Poppins-ExtraLight.ttf</string>
-		<string>Fonts/Poppins-ExtraLightItalic.ttf</string>
-		<string>Fonts/Poppins-Italic.ttf</string>
-		<string>Fonts/Poppins-Light.ttf</string>
-		<string>Fonts/Poppins-LightItalic.ttf</string>
-		<string>Fonts/Poppins-Medium.ttf</string>
-		<string>Fonts/Poppins-MediumItalic.ttf</string>
-		<string>Fonts/Poppins-Regular.ttf</string>
-		<string>Fonts/Poppins-SemiBold.ttf</string>
-		<string>Fonts/Poppins-SemiBoldItalic.ttf</string>
-		<string>Fonts/Poppins-Thin.ttf</string>
-		<string>Fonts/Poppins-ThinItalic.ttf</string>
-		<string>Fonts/Roboto-Black.ttf</string>
-		<string>Fonts/Roboto-BlackItalic.ttf</string>
-		<string>Fonts/Roboto-Bold.ttf</string>
-		<string>Fonts/Roboto-BoldItalic.ttf</string>
-		<string>Fonts/Roboto-Italic.ttf</string>
-		<string>Fonts/Roboto-Light.ttf</string>
-		<string>Fonts/Roboto-LightItalic.ttf</string>
-		<string>Fonts/Roboto-Medium.ttf</string>
-		<string>Fonts/Roboto-MediumItalic.ttf</string>
-		<string>Fonts/Roboto-Regular.ttf</string>
-		<string>Fonts/Roboto-Thin.ttf</string>
-		<string>Fonts/Roboto-ThinItalic.ttf</string>
+		<string>AntDesign.ttf</string>
+		<string>Entypo.ttf</string>
+		<string>EvilIcons.ttf</string>
+		<string>Feather.ttf</string>
+		<string>FontAwesome.ttf</string>
+		<string>FontAwesome5_Brands.ttf</string>
+		<string>FontAwesome5_Regular.ttf</string>
+		<string>FontAwesome5_Solid.ttf</string>
+		<string>Fontisto.ttf</string>
+		<string>Foundation.ttf</string>
+		<string>Ionicons.ttf</string>
+		<string>MaterialCommunityIcons.ttf</string>
+		<string>MaterialIcons.ttf</string>
+		<string>Octicons.ttf</string>
+		<string>SimpleLineIcons.ttf</string>
+		<string>Zocial.ttf</string>
 		<string>Poppins-Black.ttf</string>
 		<string>Poppins-BlackItalic.ttf</string>
 		<string>Poppins-Bold.ttf</string>

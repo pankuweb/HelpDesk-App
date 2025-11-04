@@ -1,19 +1,13 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Ionicons';
-import UnassignedTickets from '../Tickets/UnassignedTickets';
-import MyTickets from '../Tickets/MyTickets/MyTickets';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { tabItems } from '../../constants';
 
 const Tab = createBottomTabNavigator();
 
-const tabs = [
-  { name: 'Unassigned', label: 'Unassigned Tickets', icon: 'home-outline', component: UnassignedTickets },
-  { name: 'MyTickets', label: 'My Tickets', icon: 'person-outline', component: MyTickets },
-  { name: 'UnassignedT', label: 'UnassignedT', icon: 'home-outline', component: UnassignedTickets },
-  { name: 'MyTicketsT', label: 'MyTicketsT', icon: 'person-outline', component: MyTickets },
-  { name: 'MyTicketsTs', label: 'MyTicketsTs', icon: 'person-outline', component: MyTickets },
-];
+// Tabs come from dedicated tab sources
+const tabs = tabItems;
 
 function CustomTabBarButton({ children, onPress, onLongPress, opacity }) {
   return (
@@ -31,7 +25,7 @@ const TabBarIcon = ({ icon, isFocused }) => (
   <Icon
     name={icon}
     size={23}
-    color={isFocused ? '#9e0fb5' : '#007AFF'} // Replaced Colors.primary.brand with hex
+    color={isFocused ? '#026367' : 'gray'} // Replaced Colors.primary.brand with hex
     style={[styles.icon, isFocused ? styles.iconActive : null]}
   />
 );
@@ -41,13 +35,15 @@ export default function TabScreen() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
+        tabBarShowLabel: true,
+        tabBarLabelStyle: { fontSize: 12 },
         tabBarButton: ({ onPress, onLongPress, children, style }) => (
           <CustomTabBarButton onPress={onPress} onLongPress={onLongPress}>
             <View style={[style]}>{children}</View>
           </CustomTabBarButton>
         ),
         animation: 'fade',
-        tabBarActiveTintColor: '#007AFF',
+        tabBarActiveTintColor: '#026367',
         tabBarInactiveTintColor: 'gray',
       }}
     >
@@ -57,7 +53,8 @@ export default function TabScreen() {
           name={tab.name}
           component={tab.component}
           options={{
-            title: tab.label,
+            title: tab.title,
+            tabBarLabel: tab.title,
             tabBarIcon: ({ focused }) => (
               <TabBarIcon icon={tab.icon} isFocused={focused} />
             ),

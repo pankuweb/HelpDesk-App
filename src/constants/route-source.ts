@@ -10,7 +10,7 @@ import MyTicketsScreen from "../screens/Tickets/MyTickets/MyTickets";
 import ApprovalsScreen from "../screens/Tickets/Approvals/Approvals";
 import TeamsTicketsScreen from "../screens/Tickets/TeamsTickets/TeamsTickets";
 import MyRequestsScreen from "../screens/Tickets/MyRequests/MyRequests";
-import CreateTicket from "../components/Tickets/CreateTicket/CreateTicket";
+import TicketDetails from "../components/Tickets/TicketDetails/TicketDetails";
 
 export const routes = [
   {
@@ -83,11 +83,13 @@ export const routes = [
         headerShown: false
     }
   },
+  
+  
   {
-    name: 'CreateTicket',
-    component: CreateTicket,
+    name: 'TicketDetails',
+    component: TicketDetails,
     options: {
-        headerShown: false
+        headerShown: true
     }
   },
 ];

@@ -4,6 +4,7 @@ import { StyleSheet, Platform } from 'react-native';
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    marginHorizontal: 10,
   },
   headerIcons: {
     flexDirection: 'row',
@@ -62,28 +63,34 @@ const styles = StyleSheet.create({
   },
   searchOverlay: {
     position: 'absolute',
-    top: 0,
+    top: 3,
     left: 0,
     right: 0,
     height: 56,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
+    paddingHorizontal: 2,
     backgroundColor: '#f1f1f1ff',
     zIndex: 1000,
   },
   searchBar: {
     flex: 1,
-    borderRadius: 20,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 0,
     elevation: 2,
     backgroundColor: '#f9f9f9',
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 1 },
     shadowRadius: 2,
+    height: 46,
   },
   searchInput: {
     fontSize: 16,
+    marginBottom:100,
+    position: 'relative',
+    top: -6,
     marginBottom: Platform.OS === 'ios' ? 2 : 0,
   },
   closeIcon: {
