@@ -1,6 +1,8 @@
 import axios from 'axios';
 import { store } from '../redux/store';
-import { Buffer } from "buffer"; 
+import RNFS from "react-native-fs";
+import { Buffer } from "buffer";
+
 export function getToken() {
   const baseURL: any = store?.getState().login.token;
   return baseURL;
@@ -26,7 +28,7 @@ export async function fetchCurrentUser() {
       },
     });
 
-    return res?.data?.value?.[0] ?? [];
+    return res?.data?.value?.[0] ?? {};
   } catch (error) {
     console.error('Error fetching current user:', error);
     return [];
@@ -285,7 +287,7 @@ export async function fetchUnassignedTickets() {
     const token: any = state?.login?.token;
     const baseURL: any = state?.login?.tanent;
 
-    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(AssignedTo eq null) and ((ApprovalStatus eq 'Approved') or (ApprovalStatus eq null)) and (Status ne 'Closed') and (Status ne 'Resolved') and (Status ne 'Open')`;
+    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(AssignedTo eq null) and ((ApprovalStatus eq 'Approved') or (ApprovalStatus eq null)) and (Status ne 'Closed') and (Status ne 'Resolved') and (Status ne 'Open')&$orderby=Created desc`;
 
     const res = await axios.get(apiUrl, {
       headers: {
@@ -534,7 +536,7 @@ export async function fetchHR365HDMTicketFieldSettings() {
       },
     });
 
-    return res?.data?.value?.[0] ?? [];
+    return res?.data?.value?.[0] ?? {};
   } catch (error) {
     console.error('Error:', error);
     return [];
@@ -677,7 +679,7 @@ export async function fetchHR365HDMSettings() {
       },
     });
 
-    return res?.data?.value?.[0] ?? [];
+    return res?.data?.value?.[0] ?? {};
   } catch (error) {
     console.error('Error:', error);
     return [];
@@ -772,7 +774,7 @@ export async function searchGraphUsersData(name: string) {
         Accept: "application/json",
       },
     });
-
+    
     return res?.data?.value ?? [];
   } catch (error) {
     console.error("searchGraphUsers error:", error.response?.data || error);
@@ -780,3 +782,153 @@ export async function searchGraphUsersData(name: string) {
   }
 }
 
+export async function getSiteUsers() {
+  try {
+    const state: any = store?.getState();
+    const token: any = state?.login?.token;
+    const baseURL: any = state?.login?.tanent;
+    const userID: any = state?.login?.user?.UsersId;
+
+    const apiUrl = `${baseURL}/_api/Web/SiteUsers`;
+
+    const res = await axios.get(apiUrl, {
+      headers: {
+        Accept: "application/json;odata=nometadata",
+        "odata-version": "",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
+    return res?.data?.value ?? [];
+  } catch (error) {
+    console.error('Error:', error);
+    return [];
+  }
+}
+
+export async function getSiteEnsureUsers(email: string) {
+  try {
+    const state: any = store?.getState();
+    const token: any = state?.login?.token;
+    const baseURL: any = state?.login?.tanent;
+
+    const ensureUrl = `${baseURL}/_api/web/ensureuser`;
+
+    const response = await axios.post(
+      ensureUrl,
+      {
+        logonName: `i:0#.f|membership|${email}`,
+      },
+      {
+        headers: {
+          Accept: "application/json;odata=nometadata",
+          "Content-Type": "application/json;odata=nometadata",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    return response?.data;
+  } catch (error: any) {
+    console.error("Error in getSiteEnsureUsers:", error?.response?.data || error);
+    return null;
+  }
+}
+
+export async function getFormDigest() {
+  try {
+    const state: any = store?.getState();
+    const token: any = state?.login?.token;
+    const baseURL: any = state?.login?.tanent;
+
+    const digestUrl = `${baseURL}/_api/contextinfo`;
+
+    const response = await axios.post(
+      digestUrl,
+      {},
+      {
+        headers: {
+          Accept: "application/json;odata=verbose",
+          "Content-Type": "application/json;odata=verbose",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const formDigest =
+      response?.data?.d?.GetContextWebInformation?.FormDigestValue;
+
+    if (!formDigest) {
+      throw new Error("FormDigestValue not found in response");
+    }
+
+    return formDigest;
+  } catch (error: any) {
+    console.error("Error in getFormDigest:", error?.response?.data || error);
+    return null;
+  }
+}
+
+export async function uploadAttachments(
+  listName: string,
+  itemId: number,
+  files: any[]
+): Promise<void> {
+  try {
+    const state: any = store?.getState();
+    const token: any = state?.login?.token;
+    const baseURL: any = state?.login?.tanent;
+
+    const formDigest = await getFormDigest();
+
+    for (const file of files) {
+      try {
+        const attachmentUrl = `${baseURL}/_api/web/lists/getbytitle('${listName}')/items(${itemId})/AttachmentFiles/add(FileName='${encodeURIComponent(
+          file.fileName || file.name
+        )}')`;
+
+        const base64Data = await RNFS.readFile(file.uri, 'base64');
+        const binaryData = Buffer.from(base64Data, 'base64');
+
+        const response = await axios.post(attachmentUrl, binaryData, {
+          headers: {
+            Accept: "application/json;odata=verbose",
+            "Content-Type": "application/octet-stream",
+            Authorization: `Bearer ${token}`,
+            "X-RequestDigest": formDigest,
+          },
+        });
+
+        console.log(`Successfully uploaded: ${file.fileName || file.name}`, response.data);
+      } catch (fileError: any) {
+        console.error(`Error uploading ${file.fileName || file.name}:`, fileError?.response?.data || fileError);
+      }
+    }
+  } catch (error: any) {
+    console.error("Error in uploadAttachments:", error?.response?.data || error);
+  }
+}
+
+export async function fetchHR365HDMRequestType() {
+  try {
+    const state: any = store?.getState();
+    const token: any = state?.login?.token;
+    const baseURL: any = state?.login?.tanent;
+    const userID: any = state?.login?.user?.UsersId;
+
+    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMRequestType')/items`;
+
+    const res = await axios.get(apiUrl, {
+      headers: {
+        Accept: "application/json;odata=nometadata",
+        "odata-version": "",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return res?.data?.value ?? [];
+  } catch (error) {
+    console.error('Error:', error);
+    return [];
+  }
+}

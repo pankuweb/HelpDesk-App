@@ -9,6 +9,7 @@ import { useUnassignedTickets } from '../../hooks/useTickets';
 import { clearLoginData } from '../../redux/slices/loginSlice';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { FlashList } from '@shopify/flash-list';
+import AddTicketButton from '../../components/Buttons/AddTicketButton';
 // import ticketData from './../../../ticket.json';
 
 const PAGE_SIZE = 20;
@@ -128,6 +129,7 @@ const UnassignedTicketsScreen = () => {
           ) : null
         }
       />
+      <AddTicketButton />
     </View>
   );
 };

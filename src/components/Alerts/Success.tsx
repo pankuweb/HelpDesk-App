@@ -14,19 +14,19 @@ const Success: React.FC<SuccessProps> = ({ message, visible, onHide }) => {
     if (visible) {
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 200,
+        duration: 10,
         useNativeDriver: true,
       }).start();
 
       const timer = setTimeout(() => {
         Animated.timing(fadeAnim, {
           toValue: 0,
-          duration: 200,
+          duration: 10,
           useNativeDriver: true,
         }).start(() => {
           if (onHide) onHide();
         });
-      }, 2000);
+      }, 2500);
 
       return () => clearTimeout(timer);
     }
@@ -54,17 +54,18 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 999, // ensures it floats above everything
+    zIndex: 999, 
   },
   container: {
-    backgroundColor: "#d1e7dd",
-    borderRadius: 8,
+    backgroundColor: "#fff",
     paddingVertical: 12,
     paddingHorizontal: 20,
     shadowColor: "#000",
     shadowOpacity: 0.2,
+    borderWidth: 1,
+    borderColor: "#ccc",
     shadowRadius: 4,
-    elevation: 5, // Android shadow
+    elevation: 5,
     minWidth: "70%",
     alignItems: "center",
   },

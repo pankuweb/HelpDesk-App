@@ -45,9 +45,27 @@ const TicketCard: React.FC<TicketCardProps> = ({
 }) => {
   const { data: settings, isLoading, isError, refetch } = useFetchSettings();
   const siteURL = useSelector((state: RootState) => state?.login?.tanent);
-  const stripHtml = (html: string) => {
-    return html?.replace(/<\/?[^>]+(>|$)/g, "");
+  const stripHtml = (html: string): string => {
+    if (!html) return "";
+    const regex = /<(div|p|h[1-6])[^>]*>([\s\S]*?)<\/\1>/gi;
+    let match;
+    while ((match = regex.exec(html)) !== null) {
+      let innerText = match[2].replace(/<[^>]+>/g, "").trim();
+
+      innerText = innerText
+        .replace(/&nbsp;/gi, " ")
+        .replace(/&amp;/gi, "&")
+        .replace(/&lt;/gi, "<")
+        .replace(/&gt;/gi, ">")
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;/gi, "'")
+        .trim();
+
+      if (innerText) return innerText;
+    }
+    return "";
   };
+
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
       <View style={styles.card}>
@@ -86,7 +104,6 @@ const TicketCard: React.FC<TicketCardProps> = ({
             {subtitle}
           </Text>
         ) : null}
-
         {description ? (
           <Text
             style={styles.description}

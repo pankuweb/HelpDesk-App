@@ -19,7 +19,7 @@ import ImagePicker from "react-native-image-crop-picker";
 import Warning from "../../Alerts/Warning";
 import Success from "../../Alerts/Success";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import { fetchHR365HDMCustomColumns, fetchHR365HDMSettings, fetchHR365HDMTicketFieldSettings, fetchImage } from "../../../backend/RequestAPI";
+import { fetchHR365HDMCustomColumns, fetchHR365HDMSettings, fetchHR365HDMTicketFieldSettings, fetchImage, getSiteEnsureUsers, getSiteUsers, uploadAttachments } from "../../../backend/RequestAPI";
 import { useAMXAssets, useDepartments, useFetchGraphUsers, useFetchUsers, usePriority, useRequestTypes, useServices, useSubServices, useSubServicesLevelWise } from "../../../hooks/useRequests";
 import { useSelector } from "react-redux";
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -28,11 +28,15 @@ import PeoplePickerOption from "../../PeoplePicker/PeoplePickerOption";
 import { ImageSource } from "../../../constants";
 import { RenderSelectedItem } from "../../RenderSelectedItem";
 import PeoplePicker from "../../PeoplePicker/PeoplePicker";
+import { store } from "../../../redux/store";
+import {Popup} from '@sekizlipenguen/react-native-popup-confirm-toast'
+import { useNavigation } from "@react-navigation/native";
+import { useUnassignedTickets } from "../../../hooks/useTickets";
+import axios from "axios";
 
 const CreateTicket = () => {
+  const defaultCustomColData = {};
   const richText = useRef();
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [warningMessage, setWarningMessage] = useState("");
   const [FNames, setFNames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTeam, setSelectedTeam] = useState('');
@@ -44,11 +48,22 @@ const CreateTicket = () => {
   const [showPicker, setShowPicker] = useState(false);
   const [settings, setSettings] = useState({});
   const [CustomColumns, setCustomColumns] = useState([]);
+  const [siteUsersList, setSiteUsersList] = useState([]);
+  const [SLAResolveInfo, setSLAResolveInfo] = useState([]);
+  const [SLAResponseInfo, setSLAResponseInfo] = useState([]);
+  const [TicketPropertiesValue, setTicketPropertiesValue] = useState([]);
 
+  const navigation = useNavigation();
+  const loggedInUser = useSelector((state) => state?.login);
   const usersData = useSelector((state) => state?.users?.users);
+  const userDetails = useSelector((state) => state?.login?.user);
+  
+  const M365User = useSelector((state) => state?.users?.nonM365Users);
+
   const graphUsersData = useSelector((state) => state?.users?.graphUsers);
   const { isLoading: isFetchUsersLoading, refetch: refetchUsers } = useFetchUsers();
   const { isLoading: isFetchGraphUsersLoading, refetch: refetchFetchGraphUsers } = useFetchGraphUsers();
+  const { isLoading, refetch: refetchUnassignedTickets } = useUnassignedTickets();
 
   const UsersOption = usersData?.map(i => ({ ...i, label: i?.Users?.Title || `Unknown User (${i?.ID})`, value: i?.Users?.Title || `Unknown User (${i?.ID})` }));
 
@@ -62,7 +77,8 @@ const CreateTicket = () => {
 
   const serviceListData = useSelector((state: RootState) => state.requests.services);
   const Role = useSelector((state: RootState) => state.login.user)?.Roles;
-  const BaseURL = useSelector((state: RootState) => state.login.tanent);
+  const baseURL = useSelector((state: RootState) => state?.login?.tanent);
+  const token: any = useSelector((state: RootState) => state?.login?.token);
   const filteredServices = selectedTeam ? serviceListData?.filter(i => i.DepartName === selectedTeam) : [];
   const serviceOptions = filteredServices?.map((i)=> ({ label: i.SubCategory, value: i.SubCategory }));
 
@@ -81,15 +97,44 @@ const CreateTicket = () => {
   const priorityOptions = priorityListData?.map((i)=> ({ label: i.Title, value: i.Title }));
 
   const requestTypesListData = useSelector((state: RootState) => state.requests.requestTypes);
-  const requestTypesOptions = requestTypesListData?.map((i)=> ({ label: i.Title, value: i.Title }));
+  const requestTypesOptions = requestTypesListData?.map((i)=> ({ label: i.Title, value: i.Title, Default: i.DefaultRequest }));
 
   const departmentsListData = useSelector((state: RootState) => state.requests.departments);
   const departmentsOptions = departmentsListData?.map((i)=> ({ label: i.Title, value: i.Title }));
   const assetsListData = useSelector((state: RootState) => state.requests.assets);
   const assetsOptions = assetsListData?.map((i)=> ({ label: i.Title, value: i.Title }));
+  
+  const isStringValidated = (value)=> {
+    if (value == null || value == undefined || value == "") {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  FNames?.forEach(item => {
+    if (item.Type === "Choice") {
+      const defaultChoice = item?.ColumnValues?.filter(i=> i.selected === true)?.[0];
+      if (defaultChoice) {
+        defaultCustomColData[item.InternalName] = defaultChoice;
+      }
+    }
+
+    if (item.Type === "MultipleChoice") {
+      const defaultChoice = item?.ColumnValues?.filter(i => i.selected)?.map(i => i.value);
+      if (defaultChoice) {
+        defaultCustomColData[item.InternalName] = defaultChoice;
+      }
+    }
+  });
+  
   const fetchTicketFields = async () => {
     const fetchedTicketFieldsSetting = await fetchHR365HDMTicketFieldSettings();
     const fetchedCustomColumn = await fetchHR365HDMCustomColumns();
+    const siteUsers = await getSiteUsers();
+
+    setSiteUsersList(siteUsers || []);
+    
     const customColumnFields = fetchedCustomColumn?.map((i)=>{
         return {
             DisplayName: i.ColumnName,
@@ -137,6 +182,7 @@ const CreateTicket = () => {
     if(fetchCustomFormSetting?.length > 0 && isDefaultForm?.length > 0){
       const selectedFormsFields = JSON.parse(fetchCustomFormSetting?.filter(i=> i.selected === 'Yes')?.[0]?.TicketField)?.map((i)=>{
         return {
+            ...i,
             DisplayName: i.text,
             InternalName: i.IntName,
             Type: i?.Type,
@@ -148,6 +194,7 @@ const CreateTicket = () => {
             ShowType: i.ShowType || "",
           };
       });
+      
       const filteredCustomColumn = customColumnFields?.filter(c => selectedFormsFields?.some(s => s.DisplayName === c.DisplayName));
 
       setFNames([...new Map([...selectedFormsFields, ...filteredCustomColumn]?.map(f => [f?.DisplayName, f]))?.values()]);
@@ -165,9 +212,18 @@ const CreateTicket = () => {
             ShowType: i || "",
           };
       });
-      const filteredCustomColumn = customColumnFields?.filter(c => transformedFieldsOfDrag?.some(s => s.DisplayName === c.DisplayName));
 
-      setFNames([...new Map([...transformedFieldsOfDrag, ...filteredCustomColumn]?.map(f => [f?.DisplayName, f]))?.values()]);
+      const updatedFields = transformedFieldsOfDrag?.map(field => {
+        const mandFields = ["Requester", "Teams", "Title", "Request Type"];
+        if (mandFields.includes(field.DisplayName)) {
+          return { ...field, MandCheck: true };
+        }
+        return field;
+      });
+
+      const filteredCustomColumn = customColumnFields?.filter(c => updatedFields?.some(s => s.DisplayName === c.DisplayName));
+
+      setFNames([...new Map([...updatedFields, ...filteredCustomColumn]?.map(f => [f?.DisplayName, f]))?.values()]);
     }
     setLoading(false);
   }
@@ -265,23 +321,287 @@ const CreateTicket = () => {
     );
   };
 
-  const handleSubmitForm = async (values, { resetForm }) => {
-    // if (
-    //   !values.title ||
-    //   !values.service ||
-    //   !values.requestType ||
-    //   !values.priority ||
-    //   !values.subService ||
-    //   !values.description
-    // ) {
-    //   setWarningMessage("Please fill all required fields");
-    //   return;
-    // }
+  const saveTicketId = async (
+    TicketData: any,
+    TeamTicketSuffix: "",
+    rowId: any,
+  ) => {
+    try {
+      const teamName = CustomForms?.filter(i=> i.DefaultForm === 'Yes')?.[0]?.DefaultTeamCode;
 
-    console.log(values, 'test===>>>>>')
-    setShowSuccess(true);
-    resetForm();
+      const PrefixandID = parseInt(settings?.TicketPrefix?.trim()) + rowId;
+      const finalticketID = `Ticket#${rowId}`;
+      const ticktsequencewithoutSuffix = `${settings?.SequenceTitle}#${PrefixandID}`;
+
+      const ticketSequence =
+        TeamTicketSuffix === "On"
+          ? `${settings?.SequenceTitle}#${PrefixandID}-${teamName}`
+          : `${settings?.SequenceTitle}#${PrefixandID}`;
+
+      const generateRandomString = (length = 10) =>
+        Math.random().toString(20).substr(2, length);
+
+      const ticketId = rowId.toString();
+      const ylength = 12 - (4 + ticketId?.length);
+      const x = generateRandomString(4);
+      const y = generateRandomString(parseInt(ylength.toString()));
+      const generatedIssueID = x.toUpperCase() + ticketId + y.toUpperCase();
+
+      if (!finalticketID) return;
+
+      const _AutoAssignTicket =
+        settings?.AutoAssign === "On" ? "Open" : "Unassigned";
+
+      const finalTemplate = {
+        TicketID: finalticketID,
+        TicketseqWOsuffix: ticktsequencewithoutSuffix,
+        TicketSeqnumber: ticketSequence,
+        Status: _AutoAssignTicket,
+        IssueId: generatedIssueID,
+      };
+
+      const updateUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items(${rowId})`;
+
+      const res = await axios.post(updateUrl, finalTemplate, {
+        headers: {
+          Accept: "application/json;odata=nometadata",
+          "Content-type": "application/json;odata=nometadata",
+          "odata-version": "",
+          "IF-MATCH": "*",
+          "X-HTTP-Method": "MERGE",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.status === 204 || res.status === 200) {
+        console.log("Ticket updated successfully:", finalticketID);
+      }
+    } catch (error) {
+      console.error("Error updating ticket:", error?.response?.data || error?.message);
+    }
   };
+
+
+const validateMandatoryFields = (values) => {
+    const mandatoryFields = FNames?.filter(f => f.MandCheck === true);
+
+    const mandatoryFieldsList = mandatoryFields.filter(f => f.MandCheck === true);
+    const getKey = (name) => {
+        let key = name.toLowerCase().replace(/\s+/g, '');
+        switch (key) {
+            case 'requester': return 'Requester';
+            case 'requesttype': return 'requestType';
+            case 'ticketdescription': return 'description';
+            default: return key;
+        }
+    };
+    const missingFields = mandatoryFieldsList.filter(field => {
+        const key = getKey(field.InternalName);
+        const value = values[key];
+        if (value === undefined || value === null) {
+            return true;
+        }
+        if (typeof value === 'string' && value.trim() === '') {
+            return true;
+        }
+        if (Array.isArray(value) && value.length === 0) {
+            return true;
+        }
+        return false;
+    });
+    if (missingFields.length > 0) {
+        const missingNames = missingFields.map(f => f.DisplayName).join(', ');
+        Popup.show({
+            type: 'danger',
+            title: 'Error!',
+            textBody: `Please fill all required fields`,
+            buttonEnabled: false,
+            timing: 3000,
+            callback: () => Popup.hide(),
+        });
+        return false;
+    }
+    return true;
+  };
+
+  
+
+  const handleSubmitForm = async (values, { resetForm, setSubmitting }) => {  
+    if (!validateMandatoryFields(values)) {
+      return false;
+    }
+
+    setSubmitting(true);
+    let ticketsCrateHistory: any = [];
+    const requesternameForExternal: any = M365User?.some(user => selectedUsers?.includes(user.value)) ? "Yes" : "";
+    const customFData = CustomForms?.filter(i=> i.DefaultForm === 'Yes')?.[0] || {};
+    const requesterEnsureData = await getSiteEnsureUsers(values?.Requester[0]);
+    const requesterSiteData = siteUsersList?.filter(user =>
+      values?.Requester?.includes(user.Title)
+    )?.[0] || "";
+
+
+    const ccUserMails = siteUsersList?.filter(user =>
+      values?.Cc?.includes(user.Title)
+    )?.map(u => u.UserPrincipalName)?.join(",") || "";
+    
+
+    ticketsCrateHistory?.push({
+      action: "Ticket Created",
+      oldvalue: "",
+      newvalue: "Ticket Created",
+      modifiedby: loggedInUser?.name,
+      date: new Date().toISOString(),
+    });
+
+    setSLAResponseInfo((prev) => [
+      ...prev,
+      {
+        SLAResponseBreach: "No",
+        SLAResponseBreachOn: "",
+        SLAResponseReplyTime: "",
+        SLAResponseReplyDate: "",
+        SLAResponseReplyDay: "",
+        SLAResponseEscalateTime: "",
+        SLAResponseAlertTime: "",
+        SLAResponseNotifyType: "",
+        SLAResponseAlertTo: "",
+        SLAResponseMailSub: "",
+        SLAResponseMailBody: "",
+      },
+    ]);
+
+    setSLAResolveInfo((prev) => [
+      ...prev,
+      {
+        SLAResolveBreach: "No",
+        SLAResolveBreachOn: "",
+        SLAResolveReplyTime: "",
+        SLAResolveReplyDate: "",
+        SLAResolveReplyDay: "",
+        SLAResolveEscalateTime: "",
+        SLAResolveAlertTime: "",
+        SLAResolveNotifyType: "",
+        SLAResolveAlertTo: "",
+        SLAResolveMailSub: "",
+        SLAResolveMailBody: "",
+      },
+    ]);
+
+    setTicketPropertiesValue((prev) => [
+      ...prev,
+      {
+        TicketOpenDate: "",
+        InternalExtrenal:
+          requesternameForExternal != null &&
+          requesternameForExternal != undefined &&
+          requesternameForExternal != ""
+            ? "External"
+            : "Internal",
+        CCMail: ccUserMails || "",
+        Read: "Unread",
+        DepartmentCode: customFData?.DefaultTeamCode,
+        SubTickets: "",
+        LastSubTicketCharacter: "",
+        MediaSource: "MobileApp",
+        CustomFormID: isStringValidated(customFData?.FormGuid)
+          ? customFData?.FormGuid
+          : "",
+        PushNotification: "Active",
+        TicketDescription: "Inside",
+      },
+    ]);
+ 
+    const finalTemplate = {
+      Title: values?.title,
+      DepartmentName: values?.teams,
+      Services: values?.service,
+      SubServices: values?.subServicel1,
+      SubServicesL2: values?.subServicel2,
+      SubServicesL3: values?.subServicel3,
+      Priority: values?.priority,
+      RequestType: values?.requestType,
+      RequesterId: requesterSiteData?.Id || requesterEnsureData?.Id,
+      TicketDescription: values?.description,
+      TicketDescInTextformat: "",
+      TicketProperties: JSON.stringify(TicketPropertiesValue),
+      RequesterEmail: requesterSiteData?.UserPrincipalName || requesterEnsureData?.UserPrincipalName,
+      RequesterName: requesterSiteData?.Title || requesterEnsureData?.Title,
+      TicketCreatedDate: new Date().toISOString(),
+      SLAResponseDone: "No",
+      SLAResolveDone: "No",
+      SLAResponseInfo: JSON.stringify(SLAResponseInfo),
+      SLAResolveInfo: JSON.stringify(SLAResolveInfo),
+      ReadStatus: "",
+      ActionOnTicket: JSON.stringify(ticketsCrateHistory),
+      Status: "Unassigned",
+      MappedAssetDetail: "",
+    };
+
+    console.log(finalTemplate, 'finalTemplate====>>>>')
+
+    try {
+      const url = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items`;
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json;odata=nometadata',
+          'Content-Type': 'application/json;odata=nometadata',
+          'odata-version': '',
+          Authorization: `Bearer ${token}`,
+          'IF-MATCH': '*',
+          'X-HTTP-Method': 'POST',
+        },
+        body: JSON.stringify(finalTemplate),
+      });
+
+      if (res.ok) {
+        const responseData = await res.json();
+        await saveTicketId(responseData, "", responseData?.ID)
+        if (values?.attachments && values?.attachments.length > 0) {
+          await uploadAttachments("HR365HDMTickets", responseData?.ID, values?.attachments);
+        }
+        Popup.show({
+          type: 'success',
+          title: 'Success!',
+          textBody: 'Ticket created successfully!',
+          buttonEnabled: false,
+          timing: 2500,
+          callback: () => Popup.hide()
+        })
+        setTimeout(() => {
+          refetchUnassignedTickets();
+          navigation.navigate('Tab', { screen: 'UnassignedTickets' });
+        }, 3000);
+      } else {
+        const errorText = await res.text();
+        Popup.show({
+          type: 'danger',
+          title: 'Error!',
+          textBody: 'Something went wrong..!',
+          buttonEnabled: false,
+          timing: 3000,
+          callback: () => Popup.hide()
+        })
+        console.error('SharePoint call failed:', errorText);
+      }
+    } catch (error) {
+      Popup.show({
+        type: 'danger',
+        title: 'Error!',
+        textBody: 'Something went wrong..!',
+        buttonEnabled: false,
+        timing: 3000,
+        callback: () => Popup.hide()
+      })
+      console.error('Error while creating ticket:', error);
+    }
+    resetForm();
+    setSubmitting(false);
+    richText?.current?.setContentHTML("");
+  };
+
 
   if (loading) {
     return (
@@ -299,7 +619,7 @@ const CreateTicket = () => {
           initialValues={{
             title: "",
             service: "",
-            requestType: "",
+            requestType: requestTypesOptions?.find(option => option.Default === "Yes")?.value || "",
             priority: "",
             subServicel1: "",
             subServicel2: "",
@@ -309,11 +629,11 @@ const CreateTicket = () => {
             teams: "",
             Cc: "",
             attachments: [],
-            customColData: {},
+            customColData: defaultCustomColData || {},
           }}
           onSubmit={handleSubmitForm}
         >
-          {({ handleChange, handleBlur, handleSubmit, setFieldValue, values }) => (
+          {({ handleChange, handleBlur, handleSubmit, setFieldValue, values, isSubmitting }) => (
             <>
               {
                 CustomForms?.length > 1 ? 
@@ -342,7 +662,7 @@ const CreateTicket = () => {
                 FNames?.map((item, index) => {
                   return item.InternalName == "Title" ? 
                     <React.Fragment key={index}>
-                      <Text style={styles.label}>Title</Text>
+                      <Text style={styles.label}>Title {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
                       <TextInput
                         style={styles.input}
                         onChangeText={handleChange("title")}
@@ -354,7 +674,7 @@ const CreateTicket = () => {
                     </React.Fragment>
                   : item.InternalName == "Priority" ? 
                     <React.Fragment key={index}>
-                      <Text style={styles.label}>Priority Type</Text>
+                      <Text style={styles.label}>Priority Type {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
                       <Dropdown
                         style={styles.dropdown}
                         placeholderStyle={styles.placeholder}
@@ -376,7 +696,7 @@ const CreateTicket = () => {
                     </React.Fragment>
                   : item.InternalName == "Request Type" ? 
                     <React.Fragment key={index}>
-                      <Text style={styles.label}>Request Type</Text>
+                      <Text style={styles.label}>Request Type {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
                       <Dropdown
                         style={styles.dropdown}
                         placeholderStyle={styles.placeholder}
@@ -398,7 +718,7 @@ const CreateTicket = () => {
                     </React.Fragment>
                   : item.InternalName == "Services" ? 
                     <React.Fragment key={index}>
-                      <Text style={styles.label}>Service</Text>
+                      <Text style={styles.label}>Service {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
                       <Dropdown
                         style={styles.dropdown}
                         placeholderStyle={styles.placeholder}
@@ -425,7 +745,7 @@ const CreateTicket = () => {
                     item.InternalName == "Sub Services" ||
                     item.InternalName == "Sub Services L1" ? 
                     <React.Fragment key={index}>
-                      <Text style={styles.label}>Sub Service L1</Text>
+                      <Text style={styles.label}>Sub Service L1 {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
                       <Dropdown
                         style={styles.dropdown}
                         placeholderStyle={styles.placeholder}
@@ -451,7 +771,7 @@ const CreateTicket = () => {
                   : item.InternalName == "SubServiceL2" ||
                   item.InternalName == "Sub Services L2" ? 
                     <React.Fragment key={index}>
-                      <Text style={styles.label}>Sub Service L2</Text>
+                      <Text style={styles.label}>Sub Service L2 {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
                       <Dropdown
                         style={styles.dropdown}
                         placeholderStyle={styles.placeholder}
@@ -477,7 +797,7 @@ const CreateTicket = () => {
                   : item.InternalName == "SubServiceL3" ||
                   item.InternalName == "Sub Services L3" ? 
                     <React.Fragment key={index}>
-                      <Text style={styles.label}>Sub Service L3</Text>
+                      <Text style={styles.label}>Sub Service L3 {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
                       <Dropdown
                         style={styles.dropdown}
                         placeholderStyle={styles.placeholder}
@@ -499,7 +819,7 @@ const CreateTicket = () => {
                     </React.Fragment>
                   : item.InternalName == "Asset detail" ? 
                     <React.Fragment key={index}>
-                      <Text style={styles.label}>Asset Detail</Text>
+                      <Text style={styles.label}>Asset Detail {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
                       <Dropdown
                         style={styles.dropdown}
                         placeholderStyle={styles.placeholder}
@@ -521,7 +841,7 @@ const CreateTicket = () => {
                     </React.Fragment>
                   : item.InternalName == "Requester" ? 
                     <React.Fragment key={index}>
-                      <Text style={styles.label}>Requester</Text>
+                      <Text style={styles.label}>Requester {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
                       <PeoplePicker
                         fieldName="Requester"
                         values={values}
@@ -531,7 +851,7 @@ const CreateTicket = () => {
                     </React.Fragment>
                   : item.InternalName == "Teams" ? 
                     <React.Fragment key={index}>
-                      <Text style={styles.label}>Teams</Text>
+                      <Text style={styles.label}>Teams {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
                       <Dropdown
                         style={styles.dropdown}
                         placeholderStyle={styles.placeholder}
@@ -556,7 +876,7 @@ const CreateTicket = () => {
                     </React.Fragment>
                   : item.InternalName == "Cc" ? 
                     <React.Fragment key={index}>
-                      <Text style={styles.label}>Cc</Text>
+                      <Text style={styles.label}>Cc {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
                       <PeoplePicker
                         fieldName="Cc"
                         values={values}
@@ -566,7 +886,7 @@ const CreateTicket = () => {
                     </React.Fragment>
                   : item.InternalName == "Ticket Description" ? 
                     <React.Fragment key={index}>
-                      <Text style={styles.label}>Description</Text>
+                      <Text style={styles.label}>Description {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
                       <RichEditor
                         ref={richText}
                         style={styles.richInput}
@@ -623,7 +943,7 @@ const CreateTicket = () => {
                     </React.Fragment> 
                   : item.Type == "Text" ? 
                     <React.Fragment key={index}>
-                      <Text style={styles.label}>{item?.DisplayName}</Text>
+                      <Text style={styles.label}>{item?.DisplayName} {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
                       <TextInput
                         style={styles.input}
                         onChangeText={(text) =>
@@ -639,7 +959,7 @@ const CreateTicket = () => {
                     </React.Fragment>
                   : item.Type == "Note" ? 
                     <React.Fragment key={index}>
-                      <Text style={styles.label}>{item?.DisplayName}</Text>
+                      <Text style={styles.label}>{item?.DisplayName} {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
                       <TextInput
                         style={styles.input}
                         onChangeText={(text) =>
@@ -655,7 +975,7 @@ const CreateTicket = () => {
                     </React.Fragment>
                   : item.Type == "Number" ? 
                     <React.Fragment key={index}>
-                      <Text style={styles.label}>{item?.DisplayName}</Text>
+                      <Text style={styles.label}>{item?.DisplayName} {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
                       <TextInput
                         style={styles.input}
                         onChangeText={(text) =>
@@ -672,7 +992,7 @@ const CreateTicket = () => {
                     </React.Fragment>
                   : item.Type == "DateTime" ? 
                     <React.Fragment key={index}>
-                      <Text style={styles.label}>{item?.DisplayName}</Text>
+                      <Text style={styles.label}>{item?.DisplayName} {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
 
                       <TouchableOpacity
                         style={styles.input}
@@ -712,7 +1032,7 @@ const CreateTicket = () => {
                     </React.Fragment>
                   : item.Type == "Choice" ? 
                     <React.Fragment key={index}>
-                      <Text style={styles.label}>{item?.DisplayName}</Text>
+                      <Text style={styles.label}>{item?.DisplayName} {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
                       <Dropdown
                         style={styles.dropdown}
                         placeholderStyle={styles.placeholder}
@@ -736,7 +1056,7 @@ const CreateTicket = () => {
                     </React.Fragment>
                   : item.Type == "MultipleChoice" ? 
                     <React.Fragment key={index}>
-                      <Text style={styles.label}>{item?.DisplayName}</Text>
+                      <Text style={styles.label}>{item?.DisplayName} {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
                       <MultiSelect
                         style={styles.dropdown}
                         placeholderStyle={styles.placeholder}
@@ -772,7 +1092,7 @@ const CreateTicket = () => {
                     </React.Fragment>
                   : item.Type == "User" ? 
                     <React.Fragment key={index}>
-                      <Text style={styles.label}>{item?.DisplayName}</Text>
+                      <Text style={styles.label}>{item?.DisplayName} {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
                       <MultiSelect
                         style={styles.dropdown}
                         placeholderStyle={styles.placeholder}
@@ -821,8 +1141,19 @@ const CreateTicket = () => {
                 })
               }
               <View style={styles.submissionWrapper}>
-                <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
-                  <Text style={styles.submitBtnText}>Create Ticket</Text>
+                <TouchableOpacity 
+                  style={[
+                    styles.submitBtn, 
+                    isSubmitting && { backgroundColor: '#308285ff' }
+                  ]} 
+                  onPress={handleSubmit}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.submitBtnText}>Create Ticket</Text>
+                  )}
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.attachmentBtn}
@@ -867,16 +1198,6 @@ const CreateTicket = () => {
           )}
         </Formik>
       </ScrollView>
-      <Warning
-        message={warningMessage}
-        visible={!!warningMessage}
-        onHide={() => setWarningMessage("")}
-      />
-      <Success
-        message="Ticket created successfully!"
-        visible={showSuccess}
-        onHide={() => setShowSuccess(false)}
-      />
     </View>
   );
 };
@@ -1040,5 +1361,8 @@ const styles = StyleSheet.create({
   image: {
     marginRight: 6,
     backgroundColor: '#ccc',
+  },
+  requredStar: {
+    color: "#a4262c",
   },
 });

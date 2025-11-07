@@ -6,7 +6,6 @@ import { tabItems } from '../../constants';
 
 const Tab = createBottomTabNavigator();
 
-// Tabs come from dedicated tab sources
 const tabs = tabItems;
 
 function CustomTabBarButton({ children, onPress, onLongPress, opacity }) {
@@ -25,7 +24,7 @@ const TabBarIcon = ({ icon, isFocused }) => (
   <Icon
     name={icon}
     size={23}
-    color={isFocused ? '#026367' : 'gray'} // Replaced Colors.primary.brand with hex
+    color={isFocused ? '#026367' : 'gray'}
     style={[styles.icon, isFocused ? styles.iconActive : null]}
   />
 );

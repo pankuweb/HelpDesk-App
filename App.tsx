@@ -13,15 +13,16 @@ import { setGraphToken, updateLoginData } from './src/redux/slices/loginSlice';
 import { useSelector } from 'react-redux';
 import { fetchCurrentUser } from './src/backend/RequestAPI';
 import { AZURE_APP_CLIENT_ID } from '@env';
+import {Root as PopupRootProvider} from '@sekizlipenguen/react-native-popup-confirm-toast';
 
 const queryClient = new QueryClient();
 
 const AppWithAuth = () => {
   return (
-    <>
+    <PopupRootProvider>
       <InitTenant />
       <NavigationWrapper />
-    </>
+    </PopupRootProvider>
   );
 };
 

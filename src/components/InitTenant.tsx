@@ -38,8 +38,6 @@ const InitTenant: React.FC = () => {
         scope: "User.Read User.ReadBasic.All openid profile email offline_access",
       });
 
-      console.log("New Access Token:", newTokens.accessToken);
-
       dispatch(setGraphToken(graphTokens.accessToken));
       dispatch(updateShToken(newTokens.accessToken));
 
@@ -57,7 +55,6 @@ const InitTenant: React.FC = () => {
       dispatch(updateTanent(res));
     };
     getInitialTenant();
-    console.log('testingtest')
   });
 
   return null;
