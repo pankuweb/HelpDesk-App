@@ -8,6 +8,8 @@ import {
   Pressable, 
   TouchableWithoutFeedback,
   Alert,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -27,8 +29,11 @@ const TicketDetails = ({ route }) => {
 
   const [menuVisible, setMenuVisible] = useState(false);
   const [attachments, setAttachments] = useState([]);
-  const [description, setDescription] = useState(''); // Now used for tracking changes
+  const [description, setDescription] = useState('');
+  const [comment, setComment] = useState('');
   const [isReply, setIsReply] = useState(false);
+  const [showCCModal, setShowCCModal] = useState(false);
+  const [ccInput, setCcInput] = useState('');
 
   const richText = useRef(null);
 
@@ -124,6 +129,20 @@ const TicketDetails = ({ route }) => {
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleSaveCC = () => {
+    if (ccInput.trim()) {
+      // Here you can add logic to save the CC (e.g., add to a list of CCs)
+      console.log('Saving CC:', ccInput);
+      setCcInput('');
+    }
+    setShowCCModal(false);
+  };
+
+  const handleCancelCC = () => {
+    setCcInput('');
+    setShowCCModal(false);
+  };
+
   return (
     <TouchableWithoutFeedback onPress={closeMenu}>
       <View style={{ flex: 1 }}>
@@ -169,17 +188,16 @@ const TicketDetails = ({ route }) => {
               /> 
               <Text> describes as</Text>
             </View>
-            <TouchableOpacity style={[styles.row, {paddingHorizontal: 10}]}>
+            <TouchableOpacity style={[styles.row, {paddingHorizontal: 10}]} onPress={() => setShowCCModal(true)}>
               <Text style={styles.ccText}>CC</Text>
               <View>
-                <Icon name="chevron-up-outline" size={20} color="#000"  />
-                <Icon name="chevron-down-outline" size={20} color="#000"  />
+                <Icon name="chevron-up-outline" size={20} color="#026367"  />
+                <Icon name="chevron-down-outline" size={20} color="#026367"  />
               </View>
             </TouchableOpacity>
           </View>
 
           <RichEditor
-            ref={richText}
             style={styles.descriptionBox}
             placeholder={"Enter ticket description..."}
             placeholderTextColor="#333333"
@@ -264,12 +282,12 @@ const TicketDetails = ({ route }) => {
             isReply && 
             <View style={styles.editorBox}>
               <RichEditor
-                // ref={richText}
+                ref={richText}
                 style={styles.richInput}
                 placeholder="Write your reply..."
                 placeholderTextColor="#333333"
-                // initialContentHTML={description}
-                // onChange={(text) => setDescription(text)}
+                initialContentHTML={comment}
+                onChange={(text) => setComment(text)}
                 editorStyle={{
                   backgroundColor: "#fff",
                   color: "#333333",
@@ -301,6 +319,35 @@ const TicketDetails = ({ route }) => {
             </View>
           )}
         </ScrollView>
+
+        <Modal
+          visible={showCCModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowCCModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <TextInput
+                style={styles.ccInput}
+                placeholder="Enter email address..."
+                value={ccInput}
+                onChangeText={setCcInput}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <View style={styles.modalButtons}>
+                <TouchableOpacity style={styles.saveButton} onPress={handleSaveCC}>
+                  <Text style={styles.saveButtonText}>Save</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.cancelButton} onPress={handleCancelCC}>
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
     </TouchableWithoutFeedback>
   );
@@ -320,7 +367,7 @@ const styles = StyleSheet.create({
     padding: 12, 
     marginBottom: 8,
     backgroundColor: '#bcd5d7ff', 
-    shadowColor: '#000',
+    shadowColor: '#333',
     shadowOffset: { width: 0, height: 2 }, 
     shadowOpacity: 0.1,
     shadowRadius: 4, 
@@ -351,7 +398,7 @@ const styles = StyleSheet.create({
     alignItems: 'center' 
   },
   badgeText: { 
-    color: '#000', 
+    color: '#333', 
     fontSize: 14, 
     fontWeight: 'Roboto-Regular' 
   },
@@ -371,19 +418,19 @@ const styles = StyleSheet.create({
   dateText: { 
     fontSize: 14, 
     fontFamily: 'Roboto', 
-    color: '#000', 
+    color: '#333', 
     fontWeight: 600, 
   },
   seqNumber: { 
     fontSize: 15, 
     fontFamily: 'Roboto', 
-    color: '#000', 
+    color: '#333', 
     fontWeight: 700, 
   },
   value: { 
     fontSize: 15, 
     fontFamily: 'Roboto', 
-    color: '#000' 
+    color: '#333' 
   },
   descriptionBox: { 
     marginBottom: 14, 
@@ -428,7 +475,7 @@ const styles = StyleSheet.create({
     borderColor: '#ccc', 
     borderRadius: 6, 
     elevation: 4,
-    shadowColor: '#000', 
+    shadowColor: '#333', 
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2, 
     shadowRadius: 4, 
@@ -466,7 +513,7 @@ const styles = StyleSheet.create({
   },
   attachmentText: { 
     marginLeft: 6, 
-    fontSize: 14, 
+    fontSize: 16, 
     color: '#026367', 
     fontWeight: '500' 
   },
@@ -491,5 +538,63 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     alignSelf: 'flex-end',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContainer: {
+    width: '90%',
+    backgroundColor: '#fff',
+    padding: 30,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#333',
+  },
+  ccInput: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 4,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: '#f0f0f0',
+    padding: 10,
+    borderRadius: 4,
+    alignItems: 'center',
+    marginRight: 10,
+    marginLeft: 10,
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: '#026367',
+    padding: 10,
+    borderRadius: 4,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: '#333',
+    fontWeight: '500',
+    fontSize: 16,
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontWeight: '500',
+    fontSize: 16,
   },
 });
