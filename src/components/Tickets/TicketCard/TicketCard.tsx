@@ -70,33 +70,42 @@ const TicketCard: React.FC<TicketCardProps> = ({
     <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
       <View style={styles.card}>
         <View style={styles.row}>
-          <View style={styles.rowItem}>
-            <Text style={styles.ticketNumber} numberOfLines={1} ellipsizeMode="tail">
-              {ticketNumber}
-            </Text>
-          </View>
-          <View style={styles.rowItem}>
-            <Text style={styles.department}>
-              {JSON.parse(item?.TicketProperties)?.[0]?.DepartmentCode}
-            </Text>
-          </View>
-          <View style={styles.rowItem}>
-            <View
-              style={[
-                styles.statusContainer,
-                { backgroundColor: statusColors?.[status?.toLowerCase()] || '#ffebc9' },
-              ]}
-            >
-              <Text style={styles.statusText} numberOfLines={1} ellipsizeMode="tail">
-                {status}
+          {ticketNumber && (
+            <View style={styles.rowItem}>
+              <Text style={styles.ticketNumber} numberOfLines={1} ellipsizeMode="tail">
+                {ticketNumber}
               </Text>
             </View>
-          </View>
-          <View style={styles.rowItem}>
-            <Text style={styles.date} numberOfLines={1} ellipsizeMode="tail">
-              {moment(date)?.format(settings?.Dateformat || 'MM/DD/YYYY')}
-            </Text>
-          </View>
+          )}
+          {(() => {
+            const dept = JSON.parse(item?.TicketProperties)?.[0]?.DepartmentCode;
+            return dept ? (
+              <View style={styles.rowItem}>
+                <Text style={styles.department}>{dept}</Text>
+              </View>
+            ) : null;
+          })()}
+          {status && (
+            <View style={styles.rowItem}>
+              <View
+                style={[
+                  styles.statusContainer,
+                  { backgroundColor: statusColors?.[status?.toLowerCase()] || '#ffebc9' },
+                ]}
+              >
+                <Text style={styles.statusText} numberOfLines={1} ellipsizeMode="tail">
+                  {status}
+                </Text>
+              </View>
+            </View>
+          )}
+          {date && (
+            <View style={styles.rowItem}>
+              <Text style={styles.date} numberOfLines={1} ellipsizeMode="tail">
+                {moment(date)?.format(settings?.Dateformat || 'MM/DD/YYYY')}
+              </Text>
+            </View>
+          )}
         </View>
 
         {subtitle ? (

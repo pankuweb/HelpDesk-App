@@ -434,7 +434,7 @@ const validateMandatoryFields = (values) => {
     setSubmitting(true);
     let ticketsCrateHistory: any = [];
     const requesternameForExternal: any = M365User?.some(user => selectedUsers?.includes(user.value)) ? "Yes" : "";
-    const customFData = CustomForms?.filter(i=> i.DefaultForm === 'Yes')?.[0] || {};
+    const customFData = CustomForms?.filter(i=> i.DefaultForm === 'Yes') || [];
     const requesterEnsureData = await getSiteEnsureUsers(values?.Requester[0]);
     const requesterSiteData = siteUsersList?.filter(user =>
       values?.Requester?.includes(user.Title)
@@ -500,12 +500,12 @@ const validateMandatoryFields = (values) => {
             : "Internal",
         CCMail: ccUserMails || "",
         Read: "Unread",
-        DepartmentCode: customFData?.DefaultTeamCode,
+        DepartmentCode: customFData?.[0]?.DefaultTeamCode,
         SubTickets: "",
         LastSubTicketCharacter: "",
         MediaSource: "MobileApp",
-        CustomFormID: isStringValidated(customFData?.FormGuid)
-          ? customFData?.FormGuid
+        CustomFormID: isStringValidated(customFData?.[0]?.FormGuid)
+          ? customFData?.[0]?.FormGuid
           : "",
         PushNotification: "Active",
         TicketDescription: "Inside",

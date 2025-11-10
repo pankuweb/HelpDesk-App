@@ -9,6 +9,7 @@ import MyRequestsScreen from "../screens/Tickets/MyRequests/MyRequests";
 import UnassignedTicketsScreen from "../screens/Tickets/UnassignedTickets";
 import CreateTicket from "../components/Tickets/CreateTicket/CreateTicket";
 import AboutScreen from "../screens/About/AboutScreen";
+import TicketDetails from "../components/Tickets/TicketDetails/TicketDetails";
 
 export const drawerItems   = [
   {
@@ -30,5 +31,12 @@ export const drawerItems   = [
     component: AboutScreen,
     title: 'About Us',
     icon: 'information-circle-outline',
+  },
+  {
+    name: 'TicketDetails',
+    component: TicketDetails,
+    title: 'Ticket Details',
+    icon: 'information-circle-outline',
+    hideFromDrawer: true,
   },
 ];

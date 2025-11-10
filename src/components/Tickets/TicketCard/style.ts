@@ -59,7 +59,7 @@ export default StyleSheet.create({
     fontFamily: 'Roboto-Medium',
     fontSize: 14,
     color: '#333',
-    fontWeight: '600',
+    fontWeight: '700',
     marginVertical: 8,
   },
   description: {

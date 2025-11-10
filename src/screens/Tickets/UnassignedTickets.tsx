@@ -87,6 +87,7 @@ const UnassignedTicketsScreen = () => {
       priority={item?.Priority}
       reporter={item?.RequesterName}
       item={item}
+      onPress={() => navigation.navigate('TicketDetails', { ticketId: item.ticketNumber, ticketData: item })}
     />
   ), []);
 

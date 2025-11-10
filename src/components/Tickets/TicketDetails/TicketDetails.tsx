@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -7,22 +7,40 @@ import {
   TouchableOpacity, 
   Pressable, 
   TouchableWithoutFeedback,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Feather from 'react-native-vector-icons/Feather';
 import DocumentPicker from '@react-native-documents/picker';
 import { RichEditor, RichToolbar, actions } from 'react-native-pell-rich-editor';
+import ImagePicker from "react-native-image-crop-picker";
+import moment from 'moment';
+import Persona from '../Persona/Persona';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const TicketDetails = ({ route }) => {
-  const { ticketId } = route.params;
+  const { ticketId, ticketData } = route.params;
+  console.log(ticketData, 'route=====>>>>>>');
+  
   const navigation = useNavigation();
 
   const [menuVisible, setMenuVisible] = useState(false);
   const [attachments, setAttachments] = useState([]);
-  const [description, setDescription] = useState('');
+  const [description, setDescription] = useState(''); // Now used for tracking changes
+  const [isReply, setIsReply] = useState(false);
 
   const richText = useRef(null);
+
+  useEffect(() => {
+    if (richText.current && ticketData?.TicketDescription) {
+      const timer = setTimeout(() => {
+        richText.current.setContentHTML(`<p>${ticketData.TicketDescription}</p>`);
+        setDescription(ticketData.TicketDescription); // Sync to state if needed
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [ticketData?.TicketDescription]);
 
   const toggleMenu = (e) => {
     e.stopPropagation();
@@ -31,6 +49,59 @@ const TicketDetails = ({ route }) => {
 
   const closeMenu = () => {
     setMenuVisible(false);
+  };
+
+  const openGallery = async () => {
+    try {
+      const image = await ImagePicker.openPicker({
+        width: 300,
+        height: 400,
+        cropping: true,
+        includeBase64: true,
+      });
+      const b64 = `data:${image?.mime};base64,${image?.data}`;
+      richText?.current?.insertImage(b64);
+    } catch (error) {
+      if (error.code !== 'E_PICKER_CANCELLED') {
+        console.log('Gallery Error: ', error);
+      }
+    }
+  };
+
+  const openCamera = async () => {
+    try {
+      const image = await ImagePicker.openCamera({
+        width: 300,
+        height: 400,
+        cropping: true,
+        includeBase64: true,
+      });
+      const b64 = `data:${image.mime};base64,${image.data}`;
+      richText.current?.insertImage(b64);
+    } catch (error) {
+      if (error.code !== 'E_PICKER_CANCELLED') {
+        console.log('Camera Error: ', error);
+      }
+    }
+  };
+
+  const insertImage = () => {
+    Alert.alert(
+      'Insert Image',
+      'Choose source',
+      [
+        {
+          text: 'Camera',
+          onPress: openCamera,
+        },
+        {
+          text: 'Gallery',
+          onPress: openGallery,
+        },
+        { text: 'Cancel', style: 'cancel' },
+      ],
+      { cancelable: true },
+    );
   };
 
   const pickAttachment = async () => {
@@ -57,20 +128,24 @@ const TicketDetails = ({ route }) => {
     <TouchableWithoutFeedback onPress={closeMenu}>
       <View style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.container}>
+          <View style={[styles.row, {marginVertical: 6}]}>
+            <Text style={styles.seqNumber}>{ticketData?.TicketSeqnumber}</Text>
+            <Text style={styles.dateText}>{moment(ticketData?.TicketCreatedDate).format("MM/DD HH:mm")}</Text>
+          </View>
           <View style={styles.card}>
-            <View style={styles.row}>
+            <View style={[styles.row, {marginBottom: 8}]}>
               <TouchableOpacity>
                 <Feather name="download" size={22} color="#026367" /> 
               </TouchableOpacity>
 
-              <View style={[styles.badge, { backgroundColor: '#FFA500' }]}>
-                <Text style={styles.badgeText}>Urgent</Text>
+              <View style={[styles.badge, { backgroundColor: '#ffebc9' }]}>
+                <Text style={styles.badgeText}>{ticketData?.Priority}</Text>
               </View>
-              <View style={[styles.badge, { backgroundColor: '#FFA500' }]}>
-                <Text style={styles.badgeText}>Open</Text>
+              <View style={[styles.badge, { backgroundColor: '#ffebc9' }]}>
+                <Text style={styles.badgeText}>{ticketData?.Status}</Text>
               </View>
-              <View style={[styles.badge, { backgroundColor: '#FFA500' }]}>
-                <Text style={styles.badgeText}>Request</Text>
+              <View style={[styles.badge, { backgroundColor: '#ffebc9' }]}>
+                <Text style={styles.badgeText}>{ticketData?.RequestType}</Text>
               </View>
 
               <TouchableOpacity style={styles.iconButton}>
@@ -78,40 +153,69 @@ const TicketDetails = ({ route }) => {
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.subtitle}>This is the ticket subtitle</Text>
+            <Text style={styles.subtitle}>{ticketData?.Title}</Text>
 
             <View style={styles.row}>
+              <Text style={styles.halfText}>{JSON.parse(ticketData?.TicketProperties)?.[0]?.DepartmentCode}</Text>
               <Text style={styles.halfText}>AC</Text>
-              <Text style={styles.halfText}>Client Issue</Text>
+              <Text style={styles.halfText}>{ticketData?.Services}</Text>
             </View>
           </View>
-
-          <View style={styles.descriptionBox}>
-            <Text style={styles.value}>
-              This is the detailed description of the ticket. It explains the issue the client is facing in detail.
-            </Text>
+          <View style={[styles.row, {marginBottom: 8}]}>
+            <View style={styles.personaRow}>
+              <Persona
+                name={ticketData?.RequesterName}
+                mail={ticketData?.RequesterEmail}
+              /> 
+              <Text> describes as</Text>
+            </View>
+            <TouchableOpacity style={[styles.row, {paddingHorizontal: 10}]}>
+              <Text style={styles.ccText}>CC</Text>
+              <View>
+                <Icon name="chevron-up-outline" size={20} color="#000"  />
+                <Icon name="chevron-down-outline" size={20} color="#000"  />
+              </View>
+            </TouchableOpacity>
           </View>
 
+          <RichEditor
+            ref={richText}
+            style={styles.descriptionBox}
+            placeholder={"Enter ticket description..."}
+            placeholderTextColor="#333333"
+            initialContentHTML={ticketData?.TicketDescription ? `<p>${ticketData.TicketDescription}</p>` : ''}
+            enabled={false}
+            disabled
+            editorStyle={{
+              backgroundColor: "#fff",
+              color: "#333333",
+              placeholderColor: "#333333",
+              cssText: "body {font-family: Roboto; font-size: 16px;}",
+            }}
+          />
           <View style={styles.actionCard}>
             <View style={styles.actionRow}>
               <View style={styles.leftActions}>
-                <TouchableOpacity style={styles.actionButton}>
-                  <Ionicons name="arrow-back" size={18} color="#fff" />
+                <TouchableOpacity style={styles.actionButton} onPress={()=> setIsReply(true)}>
+                  <Ionicons name="arrow-back" size={20} color="#352f2fff" />
                   <Text style={styles.actionText}>Reply</Text>
                 </TouchableOpacity>
+                {
+                  isReply && 
+                  <TouchableOpacity style={styles.actionButton} onPress={()=> setIsReply(false)}>
+                    <Ionicons name="close" size={20} color="#352f2fff" />
+                    <Text style={styles.actionText}>Close</Text>
+                  </TouchableOpacity>
+                }
                 <TouchableOpacity style={styles.actionButton}>
-                  <Ionicons name="close" size={18} color="#fff" />
-                  <Text style={styles.actionText}>Close</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionButton}>
-                  <Ionicons name="document-text-outline" size={18} color="#fff" />
+                  <Ionicons name="document-text-outline" size={20} color="#352f2fff" />
                   <Text style={styles.actionText}>Private Note</Text>
                 </TouchableOpacity>
               </View>
 
               <View>
                 <TouchableOpacity onPress={toggleMenu}>
-                  <Feather name="more-vertical" size={22} color="#fff" />
+                  <Feather name="more-vertical" size={22} color="#352f2fff" />
                 </TouchableOpacity>
 
                 {menuVisible && (
@@ -156,65 +260,30 @@ const TicketDetails = ({ route }) => {
             </View>
           </View>
 
-          <View style={styles.editorBox}>
-            <RichEditor
-              ref={richText}
-              style={styles.richInput}
-              placeholder="Write your reply..."
-              placeholderTextColor="#333333"
-              initialContentHTML={description}
-              onChange={(text) => setDescription(text)}
-              editorStyle={{
-                backgroundColor: "#fff",
-                color: "#333333",
-                placeholderColor: "#333333",
-                cssText: "body {font-family: Roboto; font-size: 16px;}",
-              }}
-            />
-            <RichToolbar
-              editor={richText}
-              actions={[
-                actions.setBold,
-                actions.setItalic,
-                actions.setUnderline,
-                actions.insertOrderedList,
-                actions.insertBulletsList,
-                actions.heading1,
-                actions.heading2,
-                actions.heading3,
-                actions.setParagraph,
-                actions.insertLink,
-                actions.insertImage,
-                actions.insertVideo,
-                actions.insertCode,
-                actions.undo,
-                actions.redo,
-              ]}
-              iconMap={{
-                [actions.heading1]: () => (
-                  <Text style={styles.heading}>H1</Text>
-                ),
-                [actions.heading2]: () => (
-                  <Text style={styles.heading}>H2</Text>
-                ),
-                [actions.heading3]: () => (
-                  <Text style={styles.heading}>H3</Text>
-                ),
-                [actions.setParagraph]: () => (
-                  <Text style={styles.heading}>P</Text>
-                ),
-                [actions.insertCode]: () => (
-                  <Text style={styles.heading}>{`</>`}</Text>
-                ),
-              }}
-              iconTint="#000"
-            />
+          {
+            isReply && 
+            <View style={styles.editorBox}>
+              <RichEditor
+                // ref={richText}
+                style={styles.richInput}
+                placeholder="Write your reply..."
+                placeholderTextColor="#333333"
+                // initialContentHTML={description}
+                // onChange={(text) => setDescription(text)}
+                editorStyle={{
+                  backgroundColor: "#fff",
+                  color: "#333333",
+                  placeholderColor: "#333333",
+                  cssText: "body {font-family: Roboto; font-size: 16px;}",
+                }}
+              />
           </View>
+          }
 
           <View style={styles.attachmentRow}>
             <TouchableOpacity onPress={pickAttachment} style={styles.attachmentButton}>
+              <Text style={styles.attachmentText}>Attachments</Text>
               <Ionicons name="attach" size={20} color="#026367" />
-              <Text style={styles.attachmentText}>Add Attachment</Text>
             </TouchableOpacity>
           </View>
 
@@ -240,40 +309,187 @@ const TicketDetails = ({ route }) => {
 export default TicketDetails;
 
 const styles = StyleSheet.create({
-  container: { padding: 6, backgroundColor: '#fff' },
-  card: {
-    borderWidth: 1, borderColor: '#026367', padding: 12, marginBottom: 16,
-    backgroundColor: '#fff', shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1,
-    shadowRadius: 4, elevation: 2,
+  container: { 
+    flex: 1,
+    padding: 6, 
+    backgroundColor: '#f5f5f5' 
   },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', marginBottom: 8 },
-  badge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, minWidth: 70, alignItems: 'center' },
-  badgeText: { color: '#fff', fontSize: 14, fontWeight: 'bold' },
-  subtitle: { fontSize: 14, fontFamily: 'Roboto', color: '#333', marginVertical: 8 },
-  halfText: { flex: 1, fontSize: 14, fontFamily: 'Roboto', color: '#026367', fontWeight: 'bold', textAlign: 'left' },
-  value: { fontSize: 15, fontFamily: 'Roboto', color: '#000' },
-  descriptionBox: { padding: 12, marginBottom: 14, borderWidth: 1, borderColor: '#ccc' },
-  actionCard: { padding: 10, marginTop: 6, backgroundColor: '#026367' },
-  actionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  leftActions: { flexDirection: 'row', alignItems: 'center' },
-  actionButton: { flexDirection: 'row', alignItems: 'center', marginRight: 16 },
-  actionText: { marginLeft: 4, fontSize: 14, color: '#fff', fontWeight: 'bold' },
-  dropdownMenu: {
-    position: 'absolute', top: 25, width: 110, right: 0, backgroundColor: '#fff',
-    borderWidth: 1, borderColor: '#ccc', borderRadius: 6, elevation: 4,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2, shadowRadius: 4, zIndex: 999,
+  card: { 
+    borderWidth: 1, 
+    borderColor: '#34979aff', 
+    padding: 12, 
+    marginBottom: 8,
+    backgroundColor: '#bcd5d7ff', 
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 }, 
+    shadowOpacity: 0.1,
+    shadowRadius: 4, 
+    elevation: 2 
   },
-  dropdownItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8 },
-  dropdownIcon: { marginRight: 8 },
-  dropdownText: { fontSize: 14, color: '#026367', fontWeight: '500' },
-  editorBox: { marginTop: 10, borderWidth: 1, borderColor: '#ccc', borderRadius: 6, padding: 8 },
-  heading: { color: "#333333", fontWeight: "600", fontSize: 18 },
-  attachmentRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
-  attachmentButton: { flexDirection: 'row', alignItems: 'center' },
-  attachmentText: { marginLeft: 6, fontSize: 14, color: '#026367', fontWeight: '500' },
-  attachmentItem: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
-  attachmentName: { marginLeft: 6, fontSize: 14, color: '#333', flex: 1 },
-  removeIcon: { marginLeft: 8 },
+  row: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    flexWrap: 'wrap',  
+  },
+  personaRow: {
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    flexWrap: 'wrap',
+  },
+  ccText: {
+    fontFamily: 'Roboto',
+    fontWeight: 700,
+    marginRight: 6,
+  },
+  badge: { 
+    paddingHorizontal: 8, 
+    paddingVertical: 2, 
+    borderRadius: 4, 
+    minWidth: 70, 
+    alignItems: 'center' 
+  },
+  badgeText: { 
+    color: '#000', 
+    fontSize: 14, 
+    fontWeight: 'Roboto-Regular' 
+  },
+  subtitle: { 
+    fontSize: 14, 
+    fontFamily: 'Roboto', 
+    color: '#333', 
+    fontWeight: 700,
+    marginVertical: 8 
+  },
+  halfText: { 
+    fontSize: 14, 
+    fontFamily: 'Roboto', 
+    color: '#026367', 
+    fontWeight: 'bold', 
+  },
+  dateText: { 
+    fontSize: 14, 
+    fontFamily: 'Roboto', 
+    color: '#000', 
+    fontWeight: 600, 
+  },
+  seqNumber: { 
+    fontSize: 15, 
+    fontFamily: 'Roboto', 
+    color: '#000', 
+    fontWeight: 700, 
+  },
+  value: { 
+    fontSize: 15, 
+    fontFamily: 'Roboto', 
+    color: '#000' 
+  },
+  descriptionBox: { 
+    marginBottom: 14, 
+    borderWidth: 1, 
+    borderColor: '#ccc',
+    minHeight: 100,
+  },
+  actionCard: { 
+    padding: 10, 
+    marginTop: 6, 
+    backgroundColor: '#efefef',
+    borderColor: '#e2e2e2',
+    borderWidth: 1, 
+  },
+  actionRow: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center' 
+  },
+  leftActions: { 
+    flexDirection: 'row', 
+    alignItems: 'center' 
+  },
+  actionButton: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginRight: 16 
+  },
+  actionText: { 
+    marginLeft: 4, 
+    fontSize: 15, 
+    color: '#352f2fff', 
+    fontWeight: 'bold' 
+  },
+  dropdownMenu: { 
+    position: 'absolute', 
+    top: 25, 
+    width: 110, 
+    right: 0, 
+    backgroundColor: '#fff',
+    borderWidth: 1, 
+    borderColor: '#ccc', 
+    borderRadius: 6, 
+    elevation: 4,
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2, 
+    shadowRadius: 4, 
+    zIndex: 999 
+  },
+  dropdownItem: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    paddingHorizontal: 12, 
+    paddingVertical: 8 
+  },
+  dropdownIcon: { 
+    marginRight: 8 
+  },
+  dropdownText: { 
+    fontSize: 14, 
+    color: '#026367', 
+    fontWeight: '500' 
+  },
+  editorBox: { 
+    marginTop: 10,
+  },
+  heading: { 
+    color: "#333333", 
+    fontWeight: "600", 
+    fontSize: 18 
+  },
+  attachmentRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+  },
+  attachmentButton: { 
+    flexDirection: 'row', 
+    alignItems: 'center' 
+  },
+  attachmentText: { 
+    marginLeft: 6, 
+    fontSize: 14, 
+    color: '#026367', 
+    fontWeight: '500' 
+  },
+  attachmentItem: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginTop: 6 
+  },
+  attachmentName: { 
+    marginLeft: 6, 
+    fontSize: 14, 
+    color: '#333', 
+    flex: 1 
+  },
+  removeIcon: { 
+    marginLeft: 8 
+  },
+  richInput: {
+    minHeight: 100,
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+  iconButton: {
+    alignSelf: 'flex-end',
+  },
 });
