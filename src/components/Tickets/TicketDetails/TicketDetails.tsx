@@ -14,7 +14,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Feather from 'react-native-vector-icons/Feather';
-import DocumentPicker from '@react-native-documents/picker';
+import { pick, isCancel } from "@react-native-documents/picker";
 import { RichEditor, RichToolbar, actions } from 'react-native-pell-rich-editor';
 import ImagePicker from "react-native-image-crop-picker";
 import moment from 'moment';
@@ -29,23 +29,29 @@ const TicketDetails = ({ route }) => {
 
   const [menuVisible, setMenuVisible] = useState(false);
   const [attachments, setAttachments] = useState([]);
-  const [description, setDescription] = useState('');
   const [comment, setComment] = useState('');
   const [isReply, setIsReply] = useState(false);
   const [showCCModal, setShowCCModal] = useState(false);
   const [ccInput, setCcInput] = useState('');
 
-  const richText = useRef(null);
+  const richTextRef = useRef(null);
 
   useEffect(() => {
-    if (richText.current && ticketData?.TicketDescription) {
-      const timer = setTimeout(() => {
-        richText.current.setContentHTML(`<p>${ticketData.TicketDescription}</p>`);
-        setDescription(ticketData.TicketDescription); // Sync to state if needed
-      }, 100);
-      return () => clearTimeout(timer);
+    if (isReply && (!comment || comment.trim() === '')) {
+      const defaultContent = `
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+        <p>Regards</p>
+        <p style="margin-bottom: 4px;">Sachin Gagneja</p>
+        <p style="margin-bottom: 4px;">Accountant</p>
+        <p style="margin-bottom: 0;">917009939098</p>
+      `;
+      setComment(defaultContent);
+      if (richTextRef.current) {
+        richTextRef.current.setContentHTML(defaultContent);
+      }
     }
-  }, [ticketData?.TicketDescription]);
+  }, [isReply, comment]);
 
   const toggleMenu = (e) => {
     e.stopPropagation();
@@ -56,70 +62,18 @@ const TicketDetails = ({ route }) => {
     setMenuVisible(false);
   };
 
-  const openGallery = async () => {
-    try {
-      const image = await ImagePicker.openPicker({
-        width: 300,
-        height: 400,
-        cropping: true,
-        includeBase64: true,
-      });
-      const b64 = `data:${image?.mime};base64,${image?.data}`;
-      richText?.current?.insertImage(b64);
-    } catch (error) {
-      if (error.code !== 'E_PICKER_CANCELLED') {
-        console.log('Gallery Error: ', error);
-      }
-    }
-  };
-
-  const openCamera = async () => {
-    try {
-      const image = await ImagePicker.openCamera({
-        width: 300,
-        height: 400,
-        cropping: true,
-        includeBase64: true,
-      });
-      const b64 = `data:${image.mime};base64,${image.data}`;
-      richText.current?.insertImage(b64);
-    } catch (error) {
-      if (error.code !== 'E_PICKER_CANCELLED') {
-        console.log('Camera Error: ', error);
-      }
-    }
-  };
-
-  const insertImage = () => {
-    Alert.alert(
-      'Insert Image',
-      'Choose source',
-      [
-        {
-          text: 'Camera',
-          onPress: openCamera,
-        },
-        {
-          text: 'Gallery',
-          onPress: openGallery,
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ],
-      { cancelable: true },
-    );
-  };
-
   const pickAttachment = async () => {
     try {
-      const results = await DocumentPicker.pick({
+      const results = await pick({
         allowMultiSelection: true,
+        type: ["image/*"],
       });
 
       if (results && results?.length > 0) {
         setAttachments(prev => [...prev, ...results]);
       }
     } catch (err) {
-      if (!DocumentPicker.isCancel(err)) {
+      if (!isCancel(err)) {
         console.log('Attachment Error: ', err);
       }
     }
@@ -131,7 +85,6 @@ const TicketDetails = ({ route }) => {
 
   const handleSaveCC = () => {
     if (ccInput.trim()) {
-      // Here you can add logic to save the CC (e.g., add to a list of CCs)
       console.log('Saving CC:', ccInput);
       setCcInput('');
     }
@@ -203,7 +156,6 @@ const TicketDetails = ({ route }) => {
             placeholderTextColor="#333333"
             initialContentHTML={ticketData?.TicketDescription ? `<p>${ticketData.TicketDescription}</p>` : ''}
             enabled={false}
-            disabled
             editorStyle={{
               backgroundColor: "#fff",
               color: "#333333",
@@ -280,44 +232,44 @@ const TicketDetails = ({ route }) => {
 
           {
             isReply && 
-            <View style={styles.editorBox}>
-              <RichEditor
-                ref={richText}
-                style={styles.richInput}
-                placeholder="Write your reply..."
-                placeholderTextColor="#333333"
-                initialContentHTML={comment}
-                onChange={(text) => setComment(text)}
-                editorStyle={{
-                  backgroundColor: "#fff",
-                  color: "#333333",
-                  placeholderColor: "#333333",
-                  cssText: "body {font-family: Roboto; font-size: 16px;}",
-                }}
-              />
-          </View>
-          }
-
-          <View style={styles.attachmentRow}>
-            <TouchableOpacity onPress={pickAttachment} style={styles.attachmentButton}>
-              <Text style={styles.attachmentText}>Attachments</Text>
-              <Ionicons name="attach" size={20} color="#026367" />
-            </TouchableOpacity>
-          </View>
-
-          {attachments?.length > 0 && (
-            <View style={{ marginTop: 10 }}>
-              {attachments.map((item, index) => (
-                <View key={index} style={styles.attachmentItem}>
-                  <Ionicons name="document-outline" size={18} color="#026367" />
-                  <Text style={styles.attachmentName}>{item.name}</Text>
-                  <TouchableOpacity onPress={() => removeAttachment(index)} style={styles.removeIcon}>
-                    <Ionicons name="close-circle" size={20} color="#dc3545" />
-                  </TouchableOpacity>
+            <View>
+              <View style={styles.editorBox}>
+                <RichEditor
+                  ref={richTextRef}
+                  style={styles.richInput}
+                  placeholder="Write your reply..."
+                  placeholderTextColor="#333333"
+                  initialContentHTML={comment}
+                  onChange={(text) => setComment(text)}
+                  editorStyle={{
+                    backgroundColor: "#fff",
+                    color: "#333333",
+                    placeholderColor: "#333333",
+                    cssText: "body {font-family: Roboto; font-size: 16px;}",
+                  }}
+                />
+              </View>
+              <View style={[styles.attachmentRow,{ marginTop: 10, }]}>
+                <TouchableOpacity onPress={pickAttachment} style={styles.attachmentButton}>
+                  <Text style={styles.attachmentText}>Attachments</Text>
+                  <Ionicons name="attach" size={20} color="#026367" />
+                </TouchableOpacity>
+              </View>
+              {attachments?.length > 0 && (
+                <View style={[styles.attachmentsContainer, { marginTop: 10 }]}>
+                  {attachments?.map((item, index) => (
+                    <View key={index} style={styles.attachmentItem}>
+                      <Ionicons name="document-outline" size={18} color="#026367" />
+                      <Text style={styles.attachmentName}>{item.name}</Text>
+                      <TouchableOpacity onPress={() => removeAttachment(index)} style={styles.removeIcon}>
+                        <Ionicons name="close" size={21} color="#026367" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
                 </View>
-              ))}
+              )}
             </View>
-          )}
+          }
         </ScrollView>
 
         <Modal
@@ -518,9 +470,15 @@ const styles = StyleSheet.create({
     fontWeight: '500' 
   },
   attachmentItem: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    marginTop: 6 
+    width: '49%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f5f5f5',
+    borderColor: '#ccc',
+    borderWidth: 1,
+    padding: 10,
+    marginBottom: 6,
   },
   attachmentName: { 
     marginLeft: 6, 
@@ -538,6 +496,19 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     alignSelf: 'flex-end',
+  },
+  selectedText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#026367',
+    marginBottom: 8,
+    marginTop: 10,
+  },
+  attachmentsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginTop: 10,
   },
   modalOverlay: {
     flex: 1,
