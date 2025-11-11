@@ -12,6 +12,7 @@ const azureAuth = new AzureAuth({
 const InitTenant: React.FC = () => {
   const dispatch = useDispatch();
   const userEmail = useSelector((state) => state?.login?.email);
+  const tokenStoredAt = useSelector((state) => state?.login?.tokenStoreTime);
 
   const refreshAccessToken = async () => {
     try {
@@ -50,9 +51,12 @@ const InitTenant: React.FC = () => {
 
   useEffect(() => {
     const getInitialTenant = async () => {
-      await refreshAccessToken();
+      const now = Date.now();
+      if (!tokenStoredAt || (now - tokenStoredAt) >= 3600000) {
+        await refreshAccessToken();
+      }
       const res = await getClientTenetBaseURL(SHA_TANENT);
-      dispatch(updateTanent(res));
+      dispatch(updateTanent("https://xzm41.sharepoint.com/sites/anish"));
     };
     getInitialTenant();
   });

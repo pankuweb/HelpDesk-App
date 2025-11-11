@@ -7,6 +7,7 @@ export interface ILoginState {
   name: string;
   tanent: string;
   user: any;
+  tokenStoreTime: any;
 }
 
 const initialState: ILoginState = {
@@ -16,6 +17,7 @@ const initialState: ILoginState = {
   name: "",
   tanent: "",
   user: {},
+  tokenStoreTime: "",
 };
 
 const loginSlice = createSlice({
@@ -31,6 +33,9 @@ const loginSlice = createSlice({
     setGraphToken: (state, action: PayloadAction<ILoginState>) => {
       state.tokenGraph = action.payload;
     },
+    setTokenStoreTime: (state, action: PayloadAction<ILoginState>) => {
+      state.tokenStoreTime = action.payload;
+    },
     updateTanent: (state, action: PayloadAction<string>) => {
       state.tanent = action.payload;
     },
@@ -44,9 +49,10 @@ const loginSlice = createSlice({
       state.name = "";
       state.tanent = "";
       state.user = {};
+      state.tokenStoreTime = "";
     },
   },
 });
 
-export const { updateLoginData, updateTanent, setGraphToken, updateShToken, clearLoginData } = loginSlice.actions;
+export const { updateLoginData, updateTanent, setGraphToken, updateShToken, setTokenStoreTime, clearLoginData } = loginSlice.actions;
 export default loginSlice.reducer;

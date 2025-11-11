@@ -29,12 +29,21 @@ const TicketDetails = ({ route }) => {
 
   const [menuVisible, setMenuVisible] = useState(false);
   const [attachments, setAttachments] = useState([]);
+  const [replyOptionsVisible, setReplyOptionsVisible] = useState(false);
   const [comment, setComment] = useState('');
   const [isReply, setIsReply] = useState(false);
   const [showCCModal, setShowCCModal] = useState(false);
   const [ccInput, setCcInput] = useState('');
 
   const richTextRef = useRef(null);
+  const descriptionRef = useRef(null);
+
+  useEffect(() => {
+    if (descriptionRef.current && ticketData?.TicketDescription) {
+      const content = `<p>${ticketData.TicketDescription}</p>`;
+      descriptionRef.current.setContentHTML(content);
+    }
+  }, [ticketData?.TicketDescription]);
 
   useEffect(() => {
     if (isReply && (!comment || comment.trim() === '')) {
@@ -60,6 +69,15 @@ const TicketDetails = ({ route }) => {
 
   const closeMenu = () => {
     setMenuVisible(false);
+  };
+
+  const toggleReplyOptions = (e) => {
+    e.stopPropagation();
+    setReplyOptionsVisible(!replyOptionsVisible);
+  };
+
+  const closeReplyReplyOptions = () => {
+    setReplyOptionsVisible(false);
   };
 
   const pickAttachment = async () => {
@@ -151,6 +169,7 @@ const TicketDetails = ({ route }) => {
           </View>
 
           <RichEditor
+            ref={descriptionRef}
             style={styles.descriptionBox}
             placeholder={"Enter ticket description..."}
             placeholderTextColor="#333333"
@@ -268,6 +287,63 @@ const TicketDetails = ({ route }) => {
                   ))}
                 </View>
               )}
+              <View style={[styles.row, {marginTop: 16,}]}>
+                <View>
+                  <TouchableOpacity style={styles.discardButton} onPress={()=> setIsReply(false)}>
+                    <Ionicons name="close" size={20} color="#352f2fff" />
+                    <Text style={styles.discardText}>Discard</Text>
+                  </TouchableOpacity>
+                </View>
+                <View>
+                  <TouchableOpacity style={styles.saveReplyButton} onPress={()=> setIsReply(false)}>
+                    <Text style={styles.saveReplyText}>Save</Text>
+                  </TouchableOpacity>
+                  <View>
+                    <TouchableOpacity onPress={toggleReplyOptions}>
+                      <Feather name="more-vertical" size={22} color="#352f2fff" />
+                    </TouchableOpacity>
+
+                    {replyOptionsVisible && (
+                      <View style={styles.dropdownMenu}>
+                        <Pressable style={styles.dropdownItem} onPress={closeReplyReplyOptions}>
+                          <Ionicons name="chatbox-ellipses-outline" size={16} color="#026367" style={styles.dropdownIcon} />
+                          <Text style={styles.dropdownText}>Consult</Text>
+                        </Pressable>
+
+                        <Pressable style={styles.dropdownItem} onPress={closeReplyReplyOptions}>
+                          <Ionicons name="swap-horizontal-outline" size={16} color="#026367" style={styles.dropdownIcon} />
+                          <Text style={styles.dropdownText}>Transfer</Text>
+                        </Pressable>
+
+                        <Pressable style={styles.dropdownItem} onPress={closeReplyReplyOptions}>
+                          <Ionicons name="git-merge-outline" size={16} color="#026367" style={styles.dropdownIcon} />
+                          <Text style={styles.dropdownText}>Merge</Text>
+                        </Pressable>
+
+                        <Pressable style={styles.dropdownItem} onPress={closeReplyReplyOptions}>
+                          <Ionicons name="cut-outline" size={16} color="#026367" style={styles.dropdownIcon} />
+                          <Text style={styles.dropdownText}>Split</Text>
+                        </Pressable>
+
+                        <Pressable style={styles.dropdownItem} onPress={closeReplyReplyOptions}>
+                          <Ionicons name="arrow-up-circle-outline" size={16} color="#026367" style={styles.dropdownIcon} />
+                          <Text style={styles.dropdownText}>Escalate</Text>
+                        </Pressable>
+
+                        <Pressable style={styles.dropdownItem} onPress={closeReplyReplyOptions}>
+                          <Ionicons name="layers-outline" size={16} color="#026367" style={styles.dropdownIcon} />
+                          <Text style={styles.dropdownText}>Subticket</Text>
+                        </Pressable>
+
+                        <Pressable style={styles.dropdownItem} onPress={closeReplyReplyOptions}>
+                          <Ionicons name="eye-outline" size={16} color="#026367" style={styles.dropdownIcon} />
+                          <Text style={styles.dropdownText}>Review</Text>
+                        </Pressable>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              </View>
             </View>
           }
         </ScrollView>
@@ -417,6 +493,35 @@ const styles = StyleSheet.create({
     color: '#352f2fff', 
     fontWeight: 'bold' 
   },
+  discardButton: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    borderColor: '#34979aff', 
+    padding: 10, 
+    marginBottom: 8,
+    backgroundColor: '#bcd5d7ff', 
+  },
+  discardText: { 
+    marginLeft: 4, 
+    fontSize: 15, 
+    color: '#352f2fff', 
+    fontWeight: 600 
+  },
+  saveReplyButton: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    borderColor: '#026367', 
+    paddingHorizontal: 20, 
+    paddingVertical: 10, 
+    marginBottom: 8,
+    backgroundColor: '#026367', 
+  },
+  saveReplyText: { 
+    marginLeft: 4, 
+    fontSize: 16, 
+    color: '#fff', 
+    fontWeight: 600 
+  },
   dropdownMenu: { 
     position: 'absolute', 
     top: 25, 
@@ -465,7 +570,7 @@ const styles = StyleSheet.create({
   },
   attachmentText: { 
     marginLeft: 6, 
-    fontSize: 16, 
+    fontSize: 17, 
     color: '#026367', 
     fontWeight: '500' 
   },
