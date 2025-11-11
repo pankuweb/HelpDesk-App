@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, StyleSheet, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, RefreshControl, ActivityIndicator, TouchableOpacity, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { RootState } from '../../redux/store';
 import { useSelector, useDispatch } from 'react-redux';
@@ -95,6 +95,7 @@ const UnassignedTicketsScreen = () => {
     return (
       <View style={styles.loaderContainer}>
         <ActivityIndicator size="large" color="#026367" />
+        <Text style={styles.loaderText}>Loading tickets...</Text>
       </View>
     );
   }
@@ -148,6 +149,12 @@ const styles = StyleSheet.create({
     flex: 1, 
     justifyContent: 'center', 
     alignItems: 'center' 
+  },
+  loaderText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#026367',
+    fontWeight: '500',
   },
   footerLoader: { 
     paddingVertical: 8, 
