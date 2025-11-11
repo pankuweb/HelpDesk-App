@@ -51,8 +51,10 @@ const InitTenant: React.FC = () => {
 
   useEffect(() => {
     const getInitialTenant = async () => {
-      const now = Date.now();
-      if (!tokenStoredAt || (now - tokenStoredAt) >= 3600000) {
+      const now = Date.now()
+      const storedTime = new Date(tokenStoredAt)?.getTime();
+      
+      if (!storedTime || (now - storedTime) >= 3600000) {
         await refreshAccessToken();
       }
       const res = await getClientTenetBaseURL(SHA_TANENT);
