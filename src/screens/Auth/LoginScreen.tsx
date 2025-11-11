@@ -3,7 +3,7 @@ import { View, StyleSheet, Text, ActivityIndicator, TouchableOpacity } from 'rea
 import AzureAuth from 'react-native-azure-auth';
 import { useDispatch } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
-import { setGraphToken, updateLoginData } from '../../redux/slices/loginSlice';
+import { setGraphToken, setTokenStoreTime, updateLoginData } from '../../redux/slices/loginSlice';
 import { AZURE_APP_CLIENT_ID } from '@env';
 import { fetchCurrentUser } from '../../backend/RequestAPI';
 
@@ -20,22 +20,26 @@ const LoginScreen = () => {
     try {
       setLoading(true);
 
-      const graphTokens = await azureAuth.webAuth.authorize({
-        scope: 'openid profile email offline_access User.Read User.ReadBasic.All',
+      const sharepointTokens = await azureAuth.webAuth.authorize({
+        scope: 'https://xzm41.sharepoint.com/.default offline_access',
         prompt: 'select_account',
       });
 
-      const sharepointTokens = await azureAuth.auth.acquireTokenSilent({
-        scope: 'https://xzm41.sharepoint.com/.default offline_access',
-        userId: graphTokens.userId,
+      const graphTokens = await azureAuth.auth.acquireTokenSilent({
+        scope: 'openid profile email offline_access User.Read User.ReadBasic.All',
+        userId: sharepointTokens.userId,
       });
 
+      console.log(graphTokens.accessToken, "graphTokens.accessToken");
+      
+
       dispatch(setGraphToken(graphTokens.accessToken));
+      dispatch(setTokenStoreTime(new Date()));
       dispatch(
         updateLoginData({
           token: sharepointTokens.accessToken,
-          email: graphTokens.userId,
-          name: graphTokens.userName,
+          email: sharepointTokens.userId,
+          name: sharepointTokens.userName,
         })
       );
 
@@ -45,8 +49,8 @@ const LoginScreen = () => {
         dispatch(
           updateLoginData({
             token: sharepointTokens.accessToken,
-            email: graphTokens.userId,
-            name: graphTokens.userName,
+            email: sharepointTokens.userId,
+            name: sharepointTokens.userName,
             user: user,
           })
         );
