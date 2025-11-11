@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
   },
   dropdownText: { 
     fontSize: 14, 
-    color: '#026367', 
+    color: '#000', 
     fontWeight: '500' 
   },
   editorBox: { 
