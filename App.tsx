@@ -14,15 +14,16 @@ import { useSelector } from 'react-redux';
 import { fetchCurrentUser } from './src/backend/RequestAPI';
 import { AZURE_APP_CLIENT_ID } from '@env';
 import {Root as PopupRootProvider} from '@sekizlipenguen/react-native-popup-confirm-toast';
+import { NotificationProvider } from './src/components/Alerts/NotificationProvider';
 
 const queryClient = new QueryClient();
 
 const AppWithAuth = () => {
   return (
-    <PopupRootProvider>
+    <NotificationProvider>
       <InitTenant />
       <NavigationWrapper />
-    </PopupRootProvider>
+    </NotificationProvider>
   );
 };
 

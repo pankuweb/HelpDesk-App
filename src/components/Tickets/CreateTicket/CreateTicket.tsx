@@ -29,10 +29,10 @@ import { ImageSource } from "../../../constants";
 import { RenderSelectedItem } from "../../RenderSelectedItem";
 import PeoplePicker from "../../PeoplePicker/PeoplePicker";
 import { store } from "../../../redux/store";
-import {Popup} from '@sekizlipenguen/react-native-popup-confirm-toast'
 import { useNavigation } from "@react-navigation/native";
 import { useUnassignedTickets } from "../../../hooks/useTickets";
 import axios from "axios";
+import { useNotification } from "../../Alerts/NotificationProvider";
 
 const CreateTicket = () => {
   const defaultCustomColData = {};
@@ -57,6 +57,7 @@ const CreateTicket = () => {
   const loggedInUser = useSelector((state) => state?.login);
   const usersData = useSelector((state) => state?.users?.users);
   const userDetails = useSelector((state) => state?.login?.user);
+  const { show } = useNotification();
   
   const M365User = useSelector((state) => state?.users?.nonM365Users);
 
@@ -411,13 +412,15 @@ const validateMandatoryFields = (values) => {
     });
     if (missingFields.length > 0) {
         const missingNames = missingFields.map(f => f.DisplayName).join(', ');
-        Popup.show({
-            type: 'danger',
-            title: 'Error!',
-            textBody: `Please fill all required fields`,
-            buttonEnabled: false,
-            timing: 3000,
-            callback: () => Popup.hide(),
+        show({
+          type: 'error',
+          title: 'Error!',
+          message: 'Please fill all required fields!',
+          duration: 3000,
+          buttonEnabled: false,
+          callback: () => {
+              console.log('Notification dismissed');
+          },
         });
         return false;
     }
@@ -562,39 +565,45 @@ const validateMandatoryFields = (values) => {
         if (values?.attachments && values?.attachments.length > 0) {
           await uploadAttachments("HR365HDMTickets", responseData?.ID, values?.attachments);
         }
-        Popup.show({
+        show({
           type: 'success',
           title: 'Success!',
-          textBody: 'Ticket created successfully!',
+          message: 'Ticket created successfully!',
+          duration: 3000,
           buttonEnabled: false,
-          timing: 2500,
-          callback: () => Popup.hide()
-        })
+          callback: () => {
+              console.log('Notification dismissed');
+          },
+        });
         setTimeout(() => {
           refetchUnassignedTickets();
           navigation.navigate('Tab', { screen: 'UnassignedTickets' });
         }, 3000);
       } else {
         const errorText = await res.text();
-        Popup.show({
-          type: 'danger',
-          title: 'Error!',
-          textBody: 'Something went wrong..!',
-          buttonEnabled: false,
-          timing: 3000,
-          callback: () => Popup.hide()
-        })
+          show({
+            type: 'errror',
+            title: 'Error!',
+            message: 'Something went wrong..!',
+            duration: 3000,
+            buttonEnabled: false,
+            callback: () => {
+                console.log('Notification dismissed');
+            },
+          });
         console.error('SharePoint call failed:', errorText);
       }
     } catch (error) {
-      Popup.show({
-        type: 'danger',
-        title: 'Error!',
-        textBody: 'Something went wrong..!',
-        buttonEnabled: false,
-        timing: 3000,
-        callback: () => Popup.hide()
-      })
+      show({
+          type: 'errror',
+          title: 'Error!',
+          message: 'Something went wrong..!',
+          duration: 3000,
+          buttonEnabled: false,
+          callback: () => {
+              console.log('Notification dismissed');
+          },
+      });
       console.error('Error while creating ticket:', error);
     }
     resetForm();

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   View, 
   Text, 
@@ -21,14 +21,18 @@ import moment from 'moment';
 import Persona from '../Persona/Persona';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useSelector } from 'react-redux';
+import EditTicket from './EditTicket';
+import CreateTicket from './CreateSubTicket';
+import {Root as PopupRootProviderssss} from '@sekizlipenguen/react-native-popup-confirm-toast';
+import { NotificationProvider } from '../../Alerts/NotificationProvider';
+import PeoplePicker from '../../PeoplePicker/PeoplePicker';
+import PeoplePickerMain from '../../PeoplePicker/PeoplePickerMain';
 
 const TicketDetails = ({ route }) => {
-  const { ticketId, ticketData } = route.params;
+  const { ticketData } = route.params;
   
   const navigation = useNavigation();
   const userDetails = useSelector((state) => state?.login?.user);
-    console.log(ticketData, userDetails, 'route=====>>>>>>');
-
 
   const [menuVisible, setMenuVisible] = useState(false);
   const [attachments, setAttachments] = useState([]);
@@ -37,10 +41,26 @@ const TicketDetails = ({ route }) => {
   const [isOpenReply, setIsOpenReply] = useState(false);
   const [replyType, setReplyType] = useState('');
   const [showCCModal, setShowCCModal] = useState(false);
-  const [ccInput, setCcInput] = useState('');
+  const [ccInput, setCcInput] = useState([]);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showSubTicketModal, setShowSubTicketModal] = useState(false);
+  const [consultant, setConsultant] = useState([]);
+  const [isConsult, setISConsultant] = useState(false);
 
   const richTextRef = useRef(null);
   const descriptionRef = useRef(null);
+
+  const handleSetCcValue = useCallback((fieldName, newValue) => {
+    if (fieldName === 'Cc') {
+      setCcInput(newValue);
+    }
+  }, []);
+
+  const handleConsultant = useCallback((fieldName, newValue) => {
+    if (fieldName === 'Consultant') {
+      setConsultant(newValue);
+    }
+  }, []);
 
   useEffect(() => {
     if (descriptionRef.current && ticketData?.TicketDescription) {
@@ -67,6 +87,21 @@ const TicketDetails = ({ route }) => {
       setComment('');
       if (richTextRef.current) {
         richTextRef.current.setContentHTML('');
+      }
+    } else if (isOpenReply && isConsult) {
+      const defaultContent = `
+        <p>Please take a look at this ticket</p>
+        <p>${ticketData?.TicketSeqnumber || ``}</p>
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+        <p>Regards</p>
+        <p style="margin-bottom: 4px;">${userDetails?.FullName || ``}</p>
+        <p style="margin-bottom: 4px;">${userDetails?.Department || ``}</p>
+        <p style="margin-bottom: 0;">${userDetails?.Mobile || ``}</p>
+      `;
+      setComment(defaultContent);
+      if (richTextRef.current) {
+        richTextRef.current.setContentHTML(defaultContent);
       }
     } else {
       if (richTextRef.current) {
@@ -133,6 +168,26 @@ const TicketDetails = ({ route }) => {
     setShowCCModal(false);
   };
 
+  const openEditModal = () => {
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = () => {
+    setShowEditModal(false);
+  };
+
+  const handleCancelEdit = () => {
+    setShowEditModal(false);
+  };
+
+  const handleSaveSubTicket = () => {
+    setShowSubTicketModal(false);
+  };
+
+  const handleCancelSubTicket = () => {
+    setShowSubTicketModal(false);
+  };
+
   return (
     <TouchableWithoutFeedback onPress={closeAllDropdowns}>
       <View style={{ flex: 1 }}>
@@ -157,7 +212,7 @@ const TicketDetails = ({ route }) => {
                 <Text style={styles.badgeText}>{ticketData?.RequestType}</Text>
               </View>
 
-              <TouchableOpacity style={styles.iconButton}>
+              <TouchableOpacity style={styles.iconButton} onPress={openEditModal}>
                 <Feather name="edit-2" size={20} color="#026367" /> 
               </TouchableOpacity>
             </View>
@@ -194,6 +249,7 @@ const TicketDetails = ({ route }) => {
             placeholderTextColor="#333333"
             initialContentHTML={ticketData?.TicketDescription ? `<p>${ticketData.TicketDescription}</p>` : ''}
             enabled={false}
+            disabled
             editorStyle={{
               backgroundColor: "#fff",
               color: "#333333",
@@ -239,7 +295,11 @@ const TicketDetails = ({ route }) => {
 
                     {menuVisible && (
                       <View style={styles.dropdownMenu}>
-                        <TouchableOpacity style={styles.dropdownItem} onPress={closeMenu}>
+                        <TouchableOpacity style={styles.dropdownItem} onPress={()=> {
+                          setISConsultant(true);
+                          setIsOpenReply(true);
+                          closeMenu();
+                          }}>
                           <Ionicons name="chatbox-ellipses-outline" size={16} color="#026367" style={styles.dropdownIcon} />
                           <Text style={styles.dropdownText}>Consult</Text>
                         </TouchableOpacity>
@@ -264,7 +324,10 @@ const TicketDetails = ({ route }) => {
                           <Text style={styles.dropdownText}>Escalate</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.dropdownItem} onPress={closeMenu}>
+                        <TouchableOpacity style={styles.dropdownItem} onPress={()=> {
+                          closeMenu();
+                          setShowSubTicketModal(true);
+                        }}>
                           <Ionicons name="layers-outline" size={16} color="#026367" style={styles.dropdownIcon} />
                           <Text style={styles.dropdownText}>Subticket</Text>
                         </TouchableOpacity>
@@ -278,124 +341,135 @@ const TicketDetails = ({ route }) => {
                   </View>
                 </View>
               </View>
-          }
-
-          {
-            isOpenReply && 
-            <View>
-              <View style={[styles.editorBox, {minHeight: replyType === 'private note' ? 100 : 'unset'}]}>
-                <RichEditor
-                  ref={richTextRef}
-                  style={styles.richInput}
-                  placeholder=""
-                  placeholderTextColor="#333333"
-                  initialContentHTML={comment}
-                  onChange={(text) => setComment(text)}
-                  editorStyle={{
-                    backgroundColor: "#fff",
-                    color: "#333333",
-                    placeholderColor: "#333333",
-                    cssText: "body {font-family: Roboto; font-size: 16px;}",
-                  }}
-                />
-              </View>
-              <View style={[styles.attachmentRow,{ marginTop: 10, }]}>
-                <TouchableOpacity onPress={pickAttachment} style={styles.attachmentButton}>
-                  <Text style={styles.attachmentText}>Attachments</Text>
-                  <Ionicons name="attach" size={20} color="#026367" />
-                </TouchableOpacity>
-              </View>
-              {attachments?.length > 0 && (
-                <View style={[styles.attachmentsContainer, { marginTop: 10 }]}>
-                  {attachments?.map((item, index) => (
-                    <View key={index} style={styles.attachmentItem}>
-                      <Ionicons name="document-outline" size={18} color="#026367" />
-                      <Text style={styles.attachmentName}>{item.name}</Text>
-                      <TouchableOpacity onPress={() => removeAttachment(index)} style={styles.removeIcon}>
-                        <Ionicons name="close" size={21} color="#026367" />
-                      </TouchableOpacity>
+            }
+            {
+              isOpenReply && 
+              <View>
+                {
+                  isConsult && 
+                    <View style={{width: '100%', marginBottom: 10,}}>
+                      <Text style={styles.label}>Agent <Text style={styles.requredStar}>*</Text></Text>
+                      <PeoplePickerMain
+                        fieldName="Consultant"
+                        values={{ Consultant: consultant }}
+                        setFieldValue={handleConsultant}
+                      />
                     </View>
-                  ))}
+                }
+                <View style={[styles.editorBox, {minHeight: replyType === 'private note' ? 100 : 'unset'}]}>
+                  <RichEditor
+                    ref={richTextRef}
+                    style={styles.richInput}
+                    placeholder=""
+                    placeholderTextColor="#333333"
+                    initialContentHTML={comment}
+                    onChange={(text) => setComment(text)}
+                    editorStyle={{
+                      backgroundColor: "#fff",
+                      color: "#333333",
+                      placeholderColor: "#333333",
+                      cssText: "body {font-family: Roboto; font-size: 16px;}",
+                    }}
+                  />
                 </View>
-              )}
-              <View style={[styles.row, {marginTop: 16,}]}>
-                <View>
-                  <TouchableOpacity style={styles.discardButton} onPress={()=> {
-                    setIsOpenReply(false);
-                    setReplyType("");
-                  }}>
-                    <Ionicons name="close" size={20} color="#352f2fff" />
-                    <Text style={styles.discardText}>Discard</Text>
+                <View style={[styles.attachmentRow,{ marginTop: 10, }]}>
+                  <TouchableOpacity onPress={pickAttachment} style={styles.attachmentButton}>
+                    <Text style={styles.attachmentText}>Attachments</Text>
+                    <Ionicons name="attach" size={20} color="#026367" />
                   </TouchableOpacity>
                 </View>
-                <View style={styles.row}>
-                  <TouchableOpacity style={styles.saveReplyButton} onPress={()=> setIsOpenReply(false)}>
-                    <Text style={styles.saveReplyText}>Save</Text>
-                  </TouchableOpacity>
-                  <View style={{position: 'relative'}}>
-                    <TouchableOpacity onPress={toggleReplyOptions} style={styles.saveOptions}>
-                      <Icon name="chevron-down-outline" size={20} color="#fff"  />
-                    </TouchableOpacity>
-
-                    {replyOptionsVisible && (
-                      <View style={[styles.dropdownReplyMenu]}>
-                        <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
-                          e.stopPropagation();
-                          closeReplyReplyOptions();
-                        }}>
-                          <Text style={[styles.dropdownReplyText]}>Update and set a status as Waiting on Customer</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
-                          e.stopPropagation();
-                          closeReplyReplyOptions();
-                        }}>
-                          <Text style={[styles.dropdownReplyText]}>Update and set a status as Closed</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
-                          e.stopPropagation();
-                          closeReplyReplyOptions();
-                        }}>
-                          <Text style={[styles.dropdownReplyText]}>Update and set a status as Waiting on Third Party</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
-                          e.stopPropagation();
-                          closeReplyReplyOptions();
-                        }}>
-                          <Text style={[styles.dropdownReplyText]}>Update and set a status as Unassigned</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
-                          e.stopPropagation();
-                          closeReplyReplyOptions();
-                        }}>
-                          <Text style={[styles.dropdownReplyText]}>Update and set a status as Resolved</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
-                          e.stopPropagation();
-                          closeReplyReplyOptions();
-                        }}>
-                          <Text style={[styles.dropdownReplyText]}>Update and set a status as Open</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
-                          e.stopPropagation();
-                          closeReplyReplyOptions();
-                        }}>
-                          <Text style={[styles.dropdownReplyText]}>Update and set a status as Pending</Text>
+                {attachments?.length > 0 && (
+                  <View style={[styles.attachmentsContainer, { marginTop: 10 }]}>
+                    {attachments?.map((item, index) => (
+                      <View key={index} style={styles.attachmentItem}>
+                        <Ionicons name="document-outline" size={18} color="#026367" />
+                        <Text style={styles.attachmentName}>{item.name}</Text>
+                        <TouchableOpacity onPress={() => removeAttachment(index)} style={styles.removeIcon}>
+                          <Ionicons name="close" size={21} color="#026367" />
                         </TouchableOpacity>
                       </View>
-                    )}
+                    ))}
+                  </View>
+                )}
+                <View style={[styles.row, {marginTop: 16,}]}>
+                  <View>
+                    <TouchableOpacity style={styles.discardButton} onPress={()=> {
+                      setIsOpenReply(false);
+                      setReplyType("");
+                      setISConsultant(false);
+                    }}>
+                      <Ionicons name="close" size={20} color="#352f2fff" />
+                      <Text style={styles.discardText}>Discard</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.row}>
+                    <TouchableOpacity style={styles.saveReplyButton} onPress={()=> setIsOpenReply(false)}>
+                      <Text style={styles.saveReplyText}>Save</Text>
+                    </TouchableOpacity>
+                    <View style={{position: 'relative'}}>
+                      <TouchableOpacity onPress={toggleReplyOptions} style={styles.saveOptions}>
+                        <Icon name="chevron-down-outline" size={20} color="#fff"  />
+                      </TouchableOpacity>
+
+                      {replyOptionsVisible && (
+                        <View style={[styles.dropdownReplyMenu]}>
+                          <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
+                            e.stopPropagation();
+                            closeReplyReplyOptions();
+                          }}>
+                            <Text style={[styles.dropdownReplyText]}>Update and set a status as Waiting on Customer</Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
+                            e.stopPropagation();
+                            closeReplyReplyOptions();
+                          }}>
+                            <Text style={[styles.dropdownReplyText]}>Update and set a status as Closed</Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
+                            e.stopPropagation();
+                            closeReplyReplyOptions();
+                          }}>
+                            <Text style={[styles.dropdownReplyText]}>Update and set a status as Waiting on Third Party</Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
+                            e.stopPropagation();
+                            closeReplyReplyOptions();
+                          }}>
+                            <Text style={[styles.dropdownReplyText]}>Update and set a status as Unassigned</Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
+                            e.stopPropagation();
+                            closeReplyReplyOptions();
+                          }}>
+                            <Text style={[styles.dropdownReplyText]}>Update and set a status as Resolved</Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
+                            e.stopPropagation();
+                            closeReplyReplyOptions();
+                          }}>
+                            <Text style={[styles.dropdownReplyText]}>Update and set a status as Open</Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
+                            e.stopPropagation();
+                            closeReplyReplyOptions();
+                          }}>
+                            <Text style={[styles.dropdownReplyText]}>Update and set a status as Pending</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
                   </View>
                 </View>
               </View>
-            </View>
-          }
+            }
         </ScrollView>
-
+        {/* CC Modal */}
         <Modal
           visible={showCCModal}
           transparent={true}
@@ -404,15 +478,13 @@ const TicketDetails = ({ route }) => {
         >
           <View style={styles.modalOverlay}>
             <View style={styles.modalContainer}>
-              <TextInput
-                style={styles.ccInput}
-                placeholder="Enter email address..."
-                value={ccInput}
-                onChangeText={setCcInput}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
+              <View style={{width: '100%', marginBottom: 10,}}>
+                <PeoplePickerMain
+                  fieldName="Cc"
+                  values={{ Cc: ccInput }}
+                  setFieldValue={handleSetCcValue}
+                />
+              </View>
               <View style={styles.modalButtons}>
                 <TouchableOpacity style={styles.saveButton} onPress={handleSaveCC}>
                   <Text style={styles.saveButtonText}>Save</Text>
@@ -423,6 +495,35 @@ const TicketDetails = ({ route }) => {
               </View>
             </View>
           </View>
+        </Modal>
+
+        {/* Edit Ticket Modal*/}
+        <Modal
+          visible={showEditModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowEditModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContainer]}>
+              <EditTicket ticketData={ticketData} handleSaveEdit={handleSaveEdit} handleCancelEdit={handleCancelEdit}/>
+            </View>
+          </View>
+        </Modal>
+
+        <Modal
+          visible={showSubTicketModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => showSubTicketModal(false)}
+        >
+          <NotificationProvider>
+            <View style={styles.modalOverlay}>
+              <View style={[styles.modalContainer]}>
+                <CreateTicket ticketData={ticketData} handleSaveSubTicket={handleSaveSubTicket} handleCancelSubTicket={handleCancelSubTicket}/>
+              </View>
+            </View>
+          </NotificationProvider>
         </Modal>
       </View>
     </TouchableWithoutFeedback>
@@ -475,17 +576,17 @@ const styles = StyleSheet.create({
   badgeText: { 
     color: '#333', 
     fontSize: 14, 
-    fontWeight: 'Roboto-Regular' 
+    fontFamily: 'Roboto-Medium' 
   },
   subtitle: { 
     fontSize: 14, 
-    fontFamily: 'Roboto-Bold', 
+    fontFamily: 'Roboto-Medium',
     color: '#026367', 
     marginVertical: 8 
   },
   halfText: { 
     fontSize: 14, 
-    fontFamily: 'Roboto-Bold', 
+    fontFamily: 'Roboto-Medium',
     color: '#026367', 
   },
   dateText: { 
@@ -590,7 +691,7 @@ const styles = StyleSheet.create({
   dropdownReplyMenu: { 
     position: 'absolute', 
     top: -260, 
-    width: 370, 
+    width: 360, 
     right: 0, 
     backgroundColor: '#fff',
     borderWidth: 1, 
@@ -622,7 +723,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Roboto-Medium', 
   },
   editorBox: { 
-    marginTop: 10,
+    marginTop: 0,
   },
   heading: { 
     color: "#333333", 
@@ -747,5 +848,16 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontFamily: 'Roboto-Medium',
     fontSize: 16,
+  },
+  label: {
+    fontFamily: "Roboto",
+    fontWeight: "bold",
+    fontSize: 17,
+    marginTop: 1,
+    marginBottom: 5,
+    color: "#333333",
+  },
+  requredStar: {
+    color: "#a4262c",
   },
 });
