@@ -956,3 +956,37 @@ export async function fetchHR365HDMEmailTemplates() {
     return [];
   }
 }
+
+export async function fetchAttachments(
+  listName: string,
+  itemId: number
+): Promise<any[]> {
+  try {
+    const state: any = store?.getState();
+    const token: any = state?.login?.token;
+    const baseURL: any = state?.login?.tanent;
+
+    const url = `${baseURL}/_api/web/lists/getbytitle('${listName}')/items(${itemId})?$select=Id,AttachmentFiles&$expand=AttachmentFiles`;
+
+    const response = await axios.get(url, {
+      headers: {
+        Accept: "application/json;odata=verbose",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const files = response?.data?.d?.AttachmentFiles?.results || [];
+
+    const attachments = files.map((file: any) => ({
+      fileName: file.FileName,
+      serverRelativeUrl: file.ServerRelativeUrl,
+      absoluteUrl: `${baseURL}${file.ServerRelativeUrl}`,
+    }));
+
+    console.log("Fetched attachments:", attachments);
+    return attachments;
+  } catch (error: any) {
+    console.error("Error while fetching attachments:", error?.response?.data || error);
+    return [];
+  }
+}
