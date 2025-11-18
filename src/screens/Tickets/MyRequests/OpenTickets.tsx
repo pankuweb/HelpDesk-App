@@ -67,6 +67,7 @@ const OpenTickets = ({ tickets = [], onRefresh: parentOnRefresh, loading }) => {
             priority={item?.Priority}
             reporter={item?.RequesterName}
             item={item}
+            onPress={() => navigation.navigate('TicketDetails', { ticketId: item.ticketNumber, ticketData: item })}
           />
         )}
         initialNumToRender={10}

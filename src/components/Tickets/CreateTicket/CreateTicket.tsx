@@ -28,7 +28,7 @@ import PeoplePickerOption from "../../PeoplePicker/PeoplePickerOption";
 import { ImageSource } from "../../../constants";
 import { RenderSelectedItem } from "../../RenderSelectedItem";
 import PeoplePicker from "../../PeoplePicker/PeoplePicker";
-import { store } from "../../../redux/store";
+import { RootState, store } from "../../../redux/store";
 import { useNavigation } from "@react-navigation/native";
 import { useUnassignedTickets } from "../../../hooks/useTickets";
 import axios from "axios";

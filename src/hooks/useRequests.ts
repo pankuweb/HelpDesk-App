@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useDispatch } from "react-redux";
 import { useEffect } from "react";
-import { fetchHR365AMXAssets, fetchHR365HDMDepartments, fetchHR365HDMPriority, fetchHR365HDMRequestType, fetchHR365HDMServices, fetchHR365HDMSettings, fetchHR365HDMSubServices, fetchHR365HDMSubServicesLevelWise, fetchUsers, searchGraphUsers } from "../backend/RequestAPI";
-import { setDepartments, setPriority, setRequestTypes, setServices, setSettings, setSubServices, setSubServicesLevelWise } from "../redux/slices/requestSlice";
+import { fetchHR365AMXAssets, fetchHR365HDMDepartments, fetchHR365HDMEmailTemplates, fetchHR365HDMPriority, fetchHR365HDMRequestType, fetchHR365HDMServices, fetchHR365HDMSettings, fetchHR365HDMSubServices, fetchHR365HDMSubServicesLevelWise, fetchUsers, searchGraphUsers } from "../backend/RequestAPI";
+import { setDepartments, setEmailTemplates, setPriority, setRequestTypes, setServices, setSettings, setSubServices, setSubServicesLevelWise } from "../redux/slices/requestSlice";
 import { setGraphUsersData, updateUsersData } from "../redux/slices/userSlice";
 
 export function useServices() {
@@ -246,6 +246,31 @@ export function useFetchGraphUsers() {
   useEffect(() => {
     if (query?.isSuccess && query?.data?.length) {
       dispatch(setGraphUsersData(query?.data));
+    }
+  }, [query?.isSuccess, query?.data, dispatch]);
+
+  return {
+    ...query,
+    refetch: query?.refetch,
+  };
+}
+
+export function useFetchEmailTemplates() {
+  const dispatch = useDispatch();
+
+  const query = useQuery({
+    queryKey: ["fetchEmailTemplates"],
+    queryFn: async () => {
+      const data = await fetchHR365HDMEmailTemplates();
+      return data;
+    },
+    onError: (err) => console.error("fetchEmailTemplates error:", err),
+    refetchOnWindowFocus: false,
+  });
+
+  useEffect(() => {
+    if (query?.isSuccess && query?.data?.length) {
+      dispatch(setEmailTemplates(query?.data));
     }
   }, [query?.isSuccess, query?.data, dispatch]);
 

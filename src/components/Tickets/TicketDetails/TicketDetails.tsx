@@ -27,13 +27,35 @@ import {Root as PopupRootProviderssss} from '@sekizlipenguen/react-native-popup-
 import { NotificationProvider } from '../../Alerts/NotificationProvider';
 import PeoplePicker from '../../PeoplePicker/PeoplePicker';
 import PeoplePickerMain from '../../PeoplePicker/PeoplePickerMain';
+import { useFetchEmailTemplates, useFetchSettings } from '../../../hooks/useRequests';
+import { RootState } from '../../../redux/store';
+import axios from 'axios';
+
+
+const isStringValidated = (value) => {
+  if (value == null || value == undefined || value == "") {
+    return false;
+  } else {
+    return true;
+  }
+}
+
+const isArrayValidated = (value) => {
+  if (value == null || value == undefined || value.length === 0) {
+    return false;
+  } else {
+    return true;
+  }
+}
 
 const TicketDetails = ({ route }) => {
   const { ticketData } = route.params;
+
+  const { data: settings } = useFetchSettings();
   
   const navigation = useNavigation();
   const userDetails = useSelector((state) => state?.login?.user);
-
+  
   const [menuVisible, setMenuVisible] = useState(false);
   const [attachments, setAttachments] = useState([]);
   const [replyOptionsVisible, setReplyOptionsVisible] = useState(false);
@@ -46,9 +68,30 @@ const TicketDetails = ({ route }) => {
   const [showSubTicketModal, setShowSubTicketModal] = useState(false);
   const [consultant, setConsultant] = useState([]);
   const [isConsult, setISConsultant] = useState(false);
+  const [preAssignName, setPreAssignName] = useState("");
+  const [TimeSpendValue, setTimeSpendValue] = useState();
+  const [MarkAsAnswer, setMarkAsAnswer] = useState("No");
+  const [CommentsForReply, setCommentsForReply] = useState(JSON.parse(ticketData?.Comments  || "[]"))
+  const [globalMessage, setGlobalMessage] = useState("<p id='Comments10p1144'><br></p>");
+  const [SLABreachData, setSLABreachData] = useState(isStringValidated(ticketData?.SLABreachData) ? JSON.parse(ticketData?.SLABreachData) : [{
+    SLAStatus: '',
+    TimeBreached: '',
+    BreachReason: '',
+    FirstResponseTime: '',
+  }]);
+  const [SLAResponseInfoData, setSLAResponseInfoData] = useState(isStringValidated(ticketData?.SLAResponseInfo) ? JSON.parse(ticketData?.SLAResponseInfo) : []);
+  const [SLAResponseDone, setSLAResponseDone] = useState(isStringValidated(ticketData?.SLAResponseDone) ? ticketData?.SLAResponseDone : '',);
 
   const richTextRef = useRef(null);
   const descriptionRef = useRef(null);
+
+  const { isLoading: isEmailTemplatesLoading, refetch: refetchEmailTemplates } = useFetchEmailTemplates();
+
+  const emailTemplatesListData = useSelector((state: RootState) => state.requests.emailTemplates);
+  const baseURL = useSelector((state: RootState) => state?.login?.tanent);
+  const token: any = useSelector((state: RootState) => state?.login?.token);
+  // console.log(emailTemplatesListData, 'setting------>>>>');
+
 
   const handleSetCcValue = useCallback((fieldName, newValue) => {
     if (fieldName === 'Cc') {
@@ -68,6 +111,11 @@ const TicketDetails = ({ route }) => {
       descriptionRef.current.setContentHTML(content);
     }
   }, [ticketData?.TicketDescription]);
+
+  useEffect(() => {
+    setCommentsForReply(JSON.parse(ticketData?.Comments  || "[]"));
+    
+  }, [ticketData]);
 
   useEffect(() => {
     if (isOpenReply && replyType === 'reply' && (!comment || comment.trim() === '')) {
@@ -188,10 +236,194 @@ const TicketDetails = ({ route }) => {
     setShowSubTicketModal(false);
   };
 
+  const generateGUID = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    }).toUpperCase();
+  }
+
+  const handleReply = async () => {
+    let CommentsTo = '';
+    let CommentsToEmail = '';
+    let ticketAction = [];
+    let SLAResponse: '';
+    
+    if(replyType === 'reply'){
+      if (ticketData?.RequesterEmail?.toLowerCase() == userDetails?.Email?.toLowerCase()) {
+        CommentsTo = preAssignName == null || preAssignName == undefined || preAssignName == "" ? "this ticket" : preAssignName;
+        CommentsToEmail = preAssignName == null || preAssignName == undefined || preAssignName == "" ? "this ticket" : preAssignName;
+      } else {
+        CommentsTo = ticketData?.RequesterName;
+        CommentsToEmail = ticketData?.RequesterEmail;
+      };
+
+      const commentNo = (CommentsForReply?.length + 1).toString();
+      const newComment = {
+        CommentNo: commentNo,
+        CommentedBy: userDetails?.FullName,
+        CommentedById: userDetails?.Email,
+        CommentedDate: new Date().toISOString(),
+        CommentType: "Reply",
+        CommentBody: encodeURIComponent(comment).replace(/"/g, '|$|'),
+        CommentsTo: CommentsToEmail,
+        CommentsToName: CommentsTo,
+        NoofAttachments: "",
+        TimeSpend: TimeSpendValue,
+        MarkAsAnswer: MarkAsAnswer,
+        Guid: generateGUID(),
+      };
+
+      const updatedComments = CommentsForReply?.length > 0 
+        ? [...CommentsForReply, newComment]
+        : [newComment];
+
+      setCommentsForReply(updatedComments);
+
+      if (CommentsToEmail == ticketData?.RequesterEmail && SLAResponseDone == "No") {
+        SLAResponse = "Yes";
+        if (isArrayValidated(SLAResponseInfoData)) {
+          let result: any;
+          let timestamp = new Date().getTime() - new Date(ticketData?.Created)?.getTime();
+          const hours = Math.floor(timestamp / (1000 * 60 * 60));
+          const minutes = Math.floor((timestamp % (1000 * 60 * 60)) / (1000 * 60));
+          const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+
+          SLABreachData[0]['SLAStatus'] = result?.breached === true ? 'Breached' : 'Met';
+          SLABreachData[0]['TimeBreached'] = result?.breached === true ? result?.breachTime : '0';
+          SLABreachData[0]['FirstResponseTime'] = timeString;
+
+          SLAResponseInfoData[0]['SLAResponseReplyTime'] = new Date().toISOString();
+          SLAResponseInfoData[0]['SLAResponseReplyTime'] = new Date().toISOString();
+          SLAResponseInfoData[0]['SLAResponseReplyDate'] = moment(new Date().toISOString()).format('DD/MM/YYYY');
+          SLAResponseInfoData[0]['SLAResponseReplyDay'] = moment(new Date().toISOString()).format('dddd');
+        }
+      } else if (SLAResponseDone == "Yes") {
+        SLAResponse = "Yes";
+      } else {
+        SLAResponse = "No";
+      }
+
+
+      ticketAction?.push({
+        action: "Replied",
+        oldvalue: '',
+        newvalue: comment?.replace('<p', '')?.replace('</p>', '').replace(/<[^>]*>/g, ''),
+        modifiedby: userDetails?.FullName,
+        date: new Date().toISOString(),
+      });
+
+      let finalTemplate = {
+        Comments: JSON.stringify(updatedComments),
+        SLABreachData: JSON.stringify(SLABreachData),
+        TicketDetails: '',
+        LastCommentNo: updatedComments.length.toString(),
+        SLAResponseDone: SLAResponse,
+        AIBaseTicketDraft: "",
+        AIBaseTicket: 'Open',
+        ActionOnTicket: JSON.stringify(ticketAction),
+        SLAResponseInfo: JSON.stringify(SLAResponseInfoData),
+      };
+
+      try {
+        const updateUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items(${ticketData?.ID})`;
+        
+        const res = await axios.post(updateUrl, finalTemplate, {
+          headers: {
+            Accept: "application/json;odata=nometadata",
+            "Content-type": "application/json;odata=nometadata",
+            "odata-version": "",
+            "IF-MATCH": "*",
+            "X-HTTP-Method": "MERGE",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        
+
+        if (res.status === 204 || res.status === 200) {
+          setIsOpenReply(false);
+          console.log("Ticket updated successfully:");
+        }
+      } catch (error) {
+        console.error('Error while creating ticket:', error);
+      }
+    } else if (replyType === 'private note'){
+      
+      const commentNo = (CommentsForReply?.length + 1).toString();
+      const newComment = {
+        CommentNo: commentNo,
+        CommentedBy: userDetails?.FullName,
+        CommentedById: userDetails?.Email,
+        CommentedDate: new Date().toISOString(),
+        CommentType: "Private",
+        CommentBody: encodeURIComponent(comment).replace(/"/g, '|$|'),
+        CommentsTo: ticketData?.RequesterEmail,
+        CommentsToName: 'Private',
+        NoofAttachments: "",
+        TimeSpend: TimeSpendValue,
+        MarkAsAnswer: MarkAsAnswer,
+      };
+
+      const updatedComments = CommentsForReply?.length > 0 
+        ? [...CommentsForReply, newComment]
+        : [newComment];
+
+      setCommentsForReply(updatedComments);
+
+      ticketAction?.push({
+        action: "Private",
+        oldvalue: '',
+        newvalue: comment?.replace('<p', '')?.replace('</p>', '').replace(/<[^>]*>/g, ''),
+        modifiedby: userDetails?.FullName,
+        date: new Date().toISOString(),
+      });
+
+      if (JSON.parse(ticketData?.ActionOnTicket) == null ||
+        JSON.parse(ticketData?.ActionOnTicket) == undefined ||
+        JSON.parse(ticketData?.ActionOnTicket)?.length == 0
+      ) {
+      } else {
+        ticketAction.push(...JSON.parse(ticketData?.ActionOnTicket))
+      }
+
+      let finalTemplate = {
+        Comments: JSON.stringify(updatedComments),
+        TicketDetails: '',
+        LastCommentNo: updatedComments.length.toString(),
+        ActionOnTicket: JSON.stringify(ticketAction),
+      };
+        
+
+      try {
+        const updateUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items(${ticketData?.ID})`;
+        
+        const res = await axios.post(updateUrl, finalTemplate, {
+          headers: {
+            Accept: "application/json;odata=nometadata",
+            "Content-type": "application/json;odata=nometadata",
+            "odata-version": "",
+            "IF-MATCH": "*",
+            "X-HTTP-Method": "MERGE",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (res.status === 204 || res.status === 200) {
+          setIsOpenReply(false);
+          console.log("Ticket updated successfully:");
+        }
+      } catch (error) {
+        console.error('Error while creating ticket:', error);
+      }
+    }
+    
+  }
+
   return (
-    <TouchableWithoutFeedback onPress={closeAllDropdowns}>
+    <>
       <View style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={styles.container}>
+        <ScrollView style={{flex: 1}} contentContainerStyle={styles.container}>
           <View style={[styles.row, {marginVertical: 6}]}>
             <Text style={styles.seqNumber}>{ticketData?.TicketSeqnumber}</Text>
             <Text style={styles.dateText}>{moment(ticketData?.TicketCreatedDate).format("MM/DD HH:mm")}</Text>
@@ -257,9 +489,52 @@ const TicketDetails = ({ route }) => {
               cssText: "body {font-family: Roboto; font-size: 16px;}",
             }}
           />
+          {/* Comments */}
+          {
+            CommentsForReply?.length > 0 && 
+            CommentsForReply?.map((item, index)=> {
+              const body = decodeURIComponent(item?.CommentBody?.replace('|$|', '"'))
+                    ?.replace(/<p[^>]*>/g, '\n')
+                    .replace(/<br[^>]*>/g, '\n')
+                    .replace(/<[^>]*>/g, '')
+                    .replace(/&nbsp;/g, ' ')
+                    .replace(/\n\s*\n/g, '\n')
+                    .trim();
+              const isCommentTypePrivate = item?.CommentType == "Private" ? true : false;
+              if (isCommentTypePrivate && settings?.PrivateNoteShowSetting !== "On") return null;
+              return (
+                <View style={styles.commentCard} key={index + 1}>
+                  <View style={styles.commentCardHeadRow}>
+                      <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+                        {
+                          isCommentTypePrivate ? 
+                          <Text style={styles.commentTitle}>
+                            {item?.CommentedBy} added a private note
+                          </Text> 
+                          : <Text> replied to {item?.CommentsToName}</Text>
+                        }
+                        {
+                          isCommentTypePrivate &&
+                          <View style={{ alignItems: "center", justifyContent: "flex-start", marginLeft: 4 }}>
+                            <Ionicons name="lock-closed" size={16} color="#000" />
+                          </View>
+                        }
+
+                        
+                      </View> 
+                      <Text>{moment(item?.CommentedDate)?.format(settings?.Dateformat || 'MM/DD/YYYY')}</Text>
+                  </View>
+                  <View style={styles.commentBox}>
+                    <Text>{body}</Text>
+                  </View>
+                  <Text style={styles.commentNo}>#{item?.CommentNo}</Text>
+                </View>
+              )
+            })
+          }
           {
             !isOpenReply && 
-              <View style={styles.actionCard}>
+              <View style={[styles.actionCard, {marginBottom: !isOpenReply && 30,}]}>
                 <View style={styles.actionRow}>
                   <View style={styles.leftActions}>
                     <TouchableOpacity style={styles.actionButton} onPress={()=> {
@@ -391,7 +666,7 @@ const TicketDetails = ({ route }) => {
                     ))}
                   </View>
                 )}
-                <View style={[styles.row, {marginTop: 16,}]}>
+                <View style={[styles.row, {marginTop: 16,marginBottom: 24,}]}>
                   <View>
                     <TouchableOpacity style={styles.discardButton} onPress={()=> {
                       setIsOpenReply(false);
@@ -403,7 +678,7 @@ const TicketDetails = ({ route }) => {
                     </TouchableOpacity>
                   </View>
                   <View style={styles.row}>
-                    <TouchableOpacity style={styles.saveReplyButton} onPress={()=> setIsOpenReply(false)}>
+                    <TouchableOpacity style={styles.saveReplyButton} onPress={handleReply}>
                       <Text style={styles.saveReplyText}>Save</Text>
                     </TouchableOpacity>
                     <View style={{position: 'relative'}}>
@@ -526,7 +801,7 @@ const TicketDetails = ({ route }) => {
           </NotificationProvider>
         </Modal>
       </View>
-    </TouchableWithoutFeedback>
+    </>
   );
 };
 
@@ -534,7 +809,6 @@ export default TicketDetails;
 
 const styles = StyleSheet.create({
   container: { 
-    flex: 1,
     padding: 6, 
     backgroundColor: '#f5f5f5' 
   },
@@ -859,5 +1133,35 @@ const styles = StyleSheet.create({
   },
   requredStar: {
     color: "#a4262c",
+  },
+  commentCard: {
+    borderColor: '#e2e2e2',
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  commentBox: {
+    paddingVertical: 20,
+    paddingHorizontal: 10,
+  },
+  commentNo: {
+    fontSize: 12,
+    right: 6,
+    textAlign: 'right',
+    position: 'absolute',
+    bottom: 5,
+  },
+  commentCardHeadRow: {
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    flexWrap: 'wrap',
+    backgroundColor: '#efefef',
+    borderColor: '#e2e2e2',
+    padding: 10,
+    borderBottomWidth: 1,  
+  },
+  commentTitle: {
+    fontSize: 14,
+    fontFamily: 'Roboto-Medium',
   },
 });

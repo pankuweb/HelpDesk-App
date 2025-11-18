@@ -9,6 +9,7 @@ export interface ILoginState {
   departments: any;
   assets: any;
   settings: any;
+  emailTemplates: any;
 }
 
 const initialState: ILoginState = {
@@ -20,6 +21,7 @@ const initialState: ILoginState = {
   departments: [],
   assets: [],
   settings: {},
+  emailTemplates: [],
 };
 
 const requestSlice = createSlice({
@@ -50,6 +52,9 @@ const requestSlice = createSlice({
     setSettings: (state, action: PayloadAction<ILoginState>) => {
       state.settings = action.payload;
     },
+    setEmailTemplates: (state, action: PayloadAction<ILoginState>) => {
+      state.emailTemplates = action.payload;
+    },
     clearRequestData: (state) => {
       state.services = [];
       state.subServices = [];
@@ -59,9 +64,10 @@ const requestSlice = createSlice({
       state.assets = [];
       state.settings = [];
       state.subServicesLevelWise = [];
+      state.emailTemplates = [];
     },
   },
 });
 
-export const { setServices, setSubServices, setPriority, setRequestTypes, setDepartments, setAssets, setSettings, setSubServicesLevelWise, clearRequestData } = requestSlice.actions;
+export const { setServices, setSubServices, setPriority, setRequestTypes, setDepartments, setAssets, setSettings, setSubServicesLevelWise, setEmailTemplates, clearRequestData } = requestSlice.actions;
 export default requestSlice.reducer;

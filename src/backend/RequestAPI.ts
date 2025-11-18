@@ -932,3 +932,27 @@ export async function fetchHR365HDMRequestType() {
     return [];
   }
 }
+
+export async function fetchHR365HDMEmailTemplates() {
+  try {
+    const state: any = store?.getState();
+    const token: any = state?.login?.token;
+    const baseURL: any = state?.login?.tanent;
+    const userID: any = state?.login?.user?.UsersId;
+
+    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMEmailNotifications')/items`;
+
+    const res = await axios.get(apiUrl, {
+      headers: {
+        Accept: "application/json;odata=nometadata",
+        "odata-version": "",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return res?.data?.value ?? [];
+  } catch (error) {
+    console.error('Error:', error);
+    return [];
+  }
+}
