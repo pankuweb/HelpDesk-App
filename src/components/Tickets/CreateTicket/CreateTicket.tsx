@@ -49,9 +49,6 @@ const CreateTicket = () => {
   const [settings, setSettings] = useState({});
   const [CustomColumns, setCustomColumns] = useState([]);
   const [siteUsersList, setSiteUsersList] = useState([]);
-  const [SLAResolveInfo, setSLAResolveInfo] = useState([]);
-  const [SLAResponseInfo, setSLAResponseInfo] = useState([]);
-  const [TicketPropertiesValue, setTicketPropertiesValue] = useState([]);
 
   const navigation = useNavigation();
   const loggedInUser = useSelector((state) => state?.login);
@@ -457,63 +454,48 @@ const validateMandatoryFields = (values) => {
       date: new Date().toISOString(),
     });
 
-    setSLAResponseInfo((prev) => [
-      ...prev,
-      {
-        SLAResponseBreach: "No",
-        SLAResponseBreachOn: "",
-        SLAResponseReplyTime: "",
-        SLAResponseReplyDate: "",
-        SLAResponseReplyDay: "",
-        SLAResponseEscalateTime: "",
-        SLAResponseAlertTime: "",
-        SLAResponseNotifyType: "",
-        SLAResponseAlertTo: "",
-        SLAResponseMailSub: "",
-        SLAResponseMailBody: "",
-      },
-    ]);
+    const SLAResponseInfo = [{
+      SLAResponseBreach: "No",
+      SLAResponseBreachOn: "",
+      SLAResponseReplyTime: "",
+      SLAResponseReplyDate: "",
+      SLAResponseReplyDay: "",
+      SLAResponseEscalateTime: "",
+      SLAResponseAlertTime: "",
+      SLAResponseNotifyType: "",
+      SLAResponseAlertTo: "",
+      SLAResponseMailSub: "",
+      SLAResponseMailBody: "",
+    }];
 
-    setSLAResolveInfo((prev) => [
-      ...prev,
-      {
-        SLAResolveBreach: "No",
-        SLAResolveBreachOn: "",
-        SLAResolveReplyTime: "",
-        SLAResolveReplyDate: "",
-        SLAResolveReplyDay: "",
-        SLAResolveEscalateTime: "",
-        SLAResolveAlertTime: "",
-        SLAResolveNotifyType: "",
-        SLAResolveAlertTo: "",
-        SLAResolveMailSub: "",
-        SLAResolveMailBody: "",
-      },
-    ]);
+    const SLAResolveInfo = [{
+      SLAResolveBreach: "No",
+      SLAResolveBreachOn: "",
+      SLAResolveReplyTime: "",
+      SLAResolveReplyDate: "",
+      SLAResolveReplyDay: "",
+      SLAResolveEscalateTime: "",
+      SLAResolveAlertTime: "",
+      SLAResolveNotifyType: "",
+      SLAResolveAlertTo: "",
+      SLAResolveMailSub: "",
+      SLAResolveMailBody: "",
+    }];
 
-    setTicketPropertiesValue((prev) => [
-      ...prev,
-      {
-        TicketOpenDate: "",
-        InternalExtrenal:
-          requesternameForExternal != null &&
-          requesternameForExternal != undefined &&
-          requesternameForExternal != ""
-            ? "External"
-            : "Internal",
-        CCMail: ccUserMails || "",
-        Read: "Unread",
-        DepartmentCode: customFData?.[0]?.DefaultTeamCode,
-        SubTickets: "",
-        LastSubTicketCharacter: "",
-        MediaSource: "MobileApp",
-        CustomFormID: isStringValidated(customFData?.[0]?.FormGuid)
-          ? customFData?.[0]?.FormGuid
-          : "",
-        PushNotification: "Active",
-        TicketDescription: "Inside",
-      },
-    ]);
+    const TicketPropertiesValue = [{
+      TicketOpenDate: "",
+      InternalExtrenal: requesternameForExternal ? "External" : "Internal",
+      CCMail: ccUserMails || "",
+      Read: "Unread",
+      DepartmentCode: customFData?.[0]?.DefaultTeamCode,
+      SubTickets: "",
+      LastSubTicketCharacter: "",
+      MediaSource: "MobileApp",
+      CustomFormID: customFData?.[0]?.FormGuid || "",
+      PushNotification: "Active",
+      TicketDescription: "Inside",
+    }];
+
  
     const finalTemplate = {
       Title: values?.title,

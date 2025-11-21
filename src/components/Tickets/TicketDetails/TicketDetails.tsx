@@ -31,12 +31,13 @@ import {Root as PopupRootProviderssss} from '@sekizlipenguen/react-native-popup-
 import { NotificationProvider, useNotification } from '../../Alerts/NotificationProvider';
 import PeoplePicker from '../../PeoplePicker/PeoplePicker';
 import PeoplePickerMain from '../../PeoplePicker/PeoplePickerMain';
-import { useFetchEmailTemplates, useFetchSettings } from '../../../hooks/useRequests';
+import { useDepartments, useFetchEmailTemplates, useFetchSettings, useFetchUsers } from '../../../hooks/useRequests';
 import { RootState } from '../../../redux/store';
 import axios from 'axios';
-import { fetchAttachments, uploadAttachments } from '../../../backend/RequestAPI';
+import { fetchAttachments, getSiteUsers, PostHR365HDMExternalEmailData, postMailTrackerData, searchGraphUsersData, sendGraphMail, uploadAttachments } from '../../../backend/RequestAPI';
 import RNFS from 'react-native-fs';
 import { Buffer } from 'buffer';
+import { TemplateReplacerForCusrtomColumns, encodeEmailData, replaceAnchorTags } from '../../../hooks/customHooks';
 
 const isStringValidated = (value) => {
   if (value == null || value == undefined || value == "") {
@@ -56,7 +57,28 @@ const TicketDetails = ({ route }) => {
   const { ticketData } = route.params;
   const { data: settings } = useFetchSettings();
   const { show } = useNotification();
- 
+
+  const TRACKING_API_URL = "https://mt.msapps365.com";
+
+  let AllLinks = [];
+  let FormattedDataForLink = [];
+  const ticketProp = ticketData?.TicketProperties;
+  const DeptCode = JSON.parse(ticketProp)?.[0]?.DepartmentCode;
+  const ticketID = ticketData?.ID;
+  const ticketSQNo = ticketData?.TicketSeqnumber;
+  const ReqEmail = ticketData?.RequesterEmail;
+  const ticketAssignedToMail = ticketData?.AssignedTomail;
+  const ticketAction = ticketData?.ActionOnTicket;
+  const ticketTitle = ticketData?.Title;
+
+  const baseURL = useSelector((state: RootState) => state?.login?.tanent);
+  const token: any = useSelector((state: RootState) => state?.login?.token);
+
+  
+  const url = new URL(baseURL);
+  const tenantName = url.hostname;
+  const siteName = url.pathname.split("/")[2];
+  
   const navigation = useNavigation();
   const userDetails = useSelector((state) => state?.login?.user);
  
@@ -67,7 +89,9 @@ const TicketDetails = ({ route }) => {
   const [isOpenReply, setIsOpenReply] = useState(false);
   const [replyType, setReplyType] = useState('');
   const [showCCModal, setShowCCModal] = useState(false);
+  const [showReplyCCModal, setShowReplyCCModal] = useState(false);
   const [ccInput, setCcInput] = useState([]);
+  const [replyCcInput, setReplyCcInput] = useState([]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showSubTicketModal, setShowSubTicketModal] = useState(false);
   const [consultant, setConsultant] = useState([]);
@@ -76,7 +100,7 @@ const TicketDetails = ({ route }) => {
   const [TimeSpendValue, setTimeSpendValue] = useState();
   const [MarkAsAnswer, setMarkAsAnswer] = useState("No");
   const [CommentsForReply, setCommentsForReply] = useState(JSON.parse(ticketData?.Comments || "[]"))
-  const [CommentsAttachments, setCommentsAttachments] = useState([])
+  const [CommentsAttachments, setCommentsAttachments] = useState([]);
   const [globalMessage, setGlobalMessage] = useState("<p id='Comments10p1144'><br></p>");
   const [SLABreachData, setSLABreachData] = useState(isStringValidated(ticketData?.SLABreachData) ? JSON.parse(ticketData?.SLABreachData) : [{
     SLAStatus: '',
@@ -89,11 +113,11 @@ const TicketDetails = ({ route }) => {
  
   const richTextRef = useRef(null);
   const descriptionRef = useRef(null);
-  const { isLoading: isEmailTemplatesLoading, refetch: refetchEmailTemplates } = useFetchEmailTemplates();
-  const emailTemplatesListData = useSelector((state: RootState) => state.requests.emailTemplates);
-  const baseURL = useSelector((state: RootState) => state?.login?.tanent);
-  const token: any = useSelector((state: RootState) => state?.login?.token);
 
+  const { data: RequesterEmailTemp, isLoading: isEmailTemplatesLoading, refetch: refetchEmailTemplates } = useFetchEmailTemplates("Requester - Public Comment Created");
+  const { data: TeamsData, isLoading: isDepartmentsLoading, refetch: refetchDepartments } = useDepartments();
+  const { data: ListUsers, isLoading: isFetchUsersLoading, refetch: refetchUsers } = useFetchUsers();
+  
   const getDisplayName = (fileName: string) => {
     const parts = fileName.split('___');
     return parts.length > 1 ? parts[1] : fileName;
@@ -101,7 +125,7 @@ const TicketDetails = ({ route }) => {
 
   const downloadFileSilently = useCallback(async (fileName: string): Promise<void> => {
     try {
-      const url = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items(${ticketData?.ID})/AttachmentFiles('${fileName}')/$value`;
+      const url = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items(${ticketID})/AttachmentFiles('${fileName}')/$value`;
 
       const response = await axios({
         method: 'GET',
@@ -129,7 +153,7 @@ const TicketDetails = ({ route }) => {
       console.error('Download failed:', err.response?.status, err.message);
       throw err;
     }
-  }, [baseURL, ticketData?.ID, token]);
+  }, [baseURL, ticketID, token]);
 
   const downloadSingle = useCallback(async (fileName: string) => {
     try {
@@ -185,6 +209,12 @@ const TicketDetails = ({ route }) => {
     }
   }, []);
 
+  const handleSetReplyCcValue = useCallback((fieldName, newValue) => {
+    if (fieldName === 'Cc') {
+      setReplyCcInput(newValue);
+    }
+  }, []);
+
   const handleConsultant = useCallback((fieldName, newValue) => {
     if (fieldName === 'Consultant') {
       setConsultant(newValue);
@@ -195,7 +225,7 @@ const TicketDetails = ({ route }) => {
     const loadAttachments = async () => {
       const data = await fetchAttachments(
         "HR365HDMTickets",
-        ticketData?.ID
+        ticketID
       );
       setCommentsAttachments(data);
       console.log("Attachments:", CommentsForReply);
@@ -235,7 +265,7 @@ const TicketDetails = ({ route }) => {
     } else if (isOpenReply && isConsult) {
       const defaultContent = `
         <p>Please take a look at this ticket</p>
-        <p>${ticketData?.TicketSeqnumber || ``}</p>
+        <p>${ticketSQNo || ``}</p>
         <p>&nbsp;</p>
         <p>&nbsp;</p>
         <p>Regards</p>
@@ -253,7 +283,7 @@ const TicketDetails = ({ route }) => {
       }
       setComment('');
     }
-  }, [isOpenReply, replyType, userDetails]); // Removed 'comment' from dependencies to avoid potential loops
+  }, [isOpenReply, replyType, userDetails]); 
   const toggleMenu = (e) => {
     e.stopPropagation();
     setMenuVisible(!menuVisible);
@@ -301,6 +331,14 @@ const TicketDetails = ({ route }) => {
     setCcInput('');
     setShowCCModal(false);
   };
+  const handleSaveReplyCC = () => {
+      setReplyCcInput(replyCcInput);
+    setShowReplyCCModal(false);
+  };
+  const handleReplyCancelCC = () => {
+    setReplyCcInput('');
+    setShowReplyCCModal(false);
+  };
   const openEditModal = () => {
     setShowEditModal(true);
   };
@@ -323,21 +361,440 @@ const TicketDetails = ({ route }) => {
       return v.toString(16);
     }).toUpperCase();
   }
+
+  const generateRandomString = (length = 10) =>
+    Math.random().toString(20).substr(2, length);
+
+  const ticketId = ticketID?.toString();
+  const ylength = 12 - (4 + ticketId?.length);
+  const x = generateRandomString(4);
+  const y = generateRandomString(parseInt(ylength.toString()));
+  const generatedIssueID = x.toUpperCase() + ticketId + y.toUpperCase();
+
+  const sendEmailReply = async (subject, body, toOwner, from, CC) => {
+    const filteredCC = CC?.filter((email) => email !== "" && email?.length > 0)
+    body = body.replaceAll('</p>', '<br>').replaceAll('<p>', '')
+
+    try {
+      const requestData = {
+        emailUniqueId: generateGUID(),
+        email: userDetails?.Email,
+        userId: toOwner?.join(","),
+        senderId: userDetails?.Email,
+        tenantName: tenantName,
+        siteName: siteName,
+        mtrk: "Yes",
+        conversationId: "",
+        TeamCode: DeptCode,
+      };
+
+      let FinalData = encodeEmailData(requestData)
+      
+      const content = `
+        <span id='Comments10span817' style="display:none;">
+          <img id='Comments10img1091' src="https://mt.msapps365.com/api/v1/read?emailUniqueId=${FinalData?.['emailUniqueId']}&userId=${FinalData?.['userId']}&senderId=${FinalData?.['senderId']}&email=${FinalData?.['email']}&mtrk=${FinalData?.['mtrk']}&tenantName=${FinalData?.['tenantName']}&siteName=${FinalData?.['siteName']}&conversationId=${FinalData?.['conversationId']}" style="display:none;">
+        </span>
+      `;
+
+      if(settings?.IsMailTracker){
+        body += content; 
+        replaceAnchorTags(
+          body,
+          TRACKING_API_URL,
+          requestData?.emailUniqueId,
+          requestData?.senderId,
+          requestData
+        );
+      }
+
+    if(settings?.IsMailTracker){
+      await postMailTrackerData(FinalData, requestData,subject,body,CC,DeptCode, ticketSQNo, AllLinks,FormattedDataForLink);
+    }
+
+     try {
+       const emailMessage = {
+          message: {
+              subject: subject,
+              body: {
+                  contentType: 'HTML',
+                  content: body,
+              },
+              toRecipients: toOwner?.map((email) => ({ emailAddress: { address: email } })),
+              ccRecipients: !settings?.IsCCDisabled == 'On' ? filteredCC?.map((email) => ({ emailAddress: { address: email } })) : [],
+              from: {
+                emailAddress: {
+                  address: '',
+                },
+              },
+          },
+      };
+
+      await sendGraphMail(emailMessage);
+     } catch (error) {
+      console.error(error);
+     }
+
+  } catch (error) {
+      console.error('Error sending email via Graph API:', error);
+  }
+}
+  
+  const postExternal = async (from, to, body, sub, CCMailsForSpUILITY,ticketid = null,AttachmentNames = null) => {
+    try {
+      if (isStringValidated(JSON.parse(ticketProp)?.[0]?.MailBox)) {
+        from = JSON.parse(ticketProp)?.[0]?.MailBox
+      }
+
+      const requestData = {
+        emailUniqueId: generateGUID(),
+        email: from,
+        userId: to?.join(","),
+        senderId: userDetails?.Email,
+        tenantName: tenantName,
+        siteName: siteName,
+        mtrk: "Yes",
+        conversationId: "",
+        TeamCode: DeptCode,
+      };
+
+      let FinalData = encodeEmailData(requestData)
+      
+      const content = `
+        <span id='Comments10span818' style="display:none;">
+          <img id='Comments10img1092' src="https://mt.msapps365.com/api/v1/read?emailUniqueId=${FinalData?.['emailUniqueId']}&userId=${FinalData?.['userId']}&senderId=${FinalData?.['senderId']}&email=${FinalData?.['email']}&mtrk=${FinalData?.['mtrk']}&tenantName=${FinalData?.['tenantName']}&siteName=${FinalData?.['siteName']}&conversationId=${FinalData?.['conversationId']}" style="display:none;">
+        </span>
+      `;  
+        
+      if(settings?.IsMailTracker){
+        await postMailTrackerData(FinalData, requestData,sub,body,CCMailsForSpUILITY,DeptCode, ticketSQNo, AllLinks,FormattedDataForLink);
+      }
+
+      CCMailsForSpUILITY = [...new Set(CCMailsForSpUILITY?.flat())]
+      let filteredEmails = CCMailsForSpUILITY?.filter((email) => email !== "" && email?.length > 0);
+      filteredEmails = filteredEmails?.filter((item, index) => {
+        return (
+      (    filteredEmails?.findIndex(
+            (element) => element === item
+          ) === index)
+        );
+      })?.join(",");
+
+      let emails = filteredEmails?.split(',')?.map(email => email?.toLowerCase());
+      let uniqueEmails = [...new Set(emails)];
+      let uniqueEmailString = uniqueEmails;
+      
+      body = body.replaceAll('</p>', '<br>').replaceAll('<p>', '')
+      if(settings?.IsMailTracker){
+        body += content
+        try {
+          replaceAnchorTags(
+            body,
+            TRACKING_API_URL,
+            requestData?.emailUniqueId,
+            requestData?.senderId,
+            requestData
+          );
+        } catch (error) {
+          console.log(error)
+        }
+      }
+
+      let finalTemplate = {
+        cC: settings?.IsCCDisabled == 'On' ? '' : replyType === 'private note' ? CCMailsForSpUILITY?.join() : uniqueEmailString?.join(),
+        From: from,
+        To: to.join(';'),
+        Body: body,
+        Subject: sub,
+        TickeID:ticketid,
+        AttachmentName:AttachmentNames
+      };
+
+      if(settings?.IsMailTracker){
+        await postMailTrackerData(FinalData, requestData,sub,body,finalTemplate?.cC,DeptCode, ticketSQNo, AllLinks,FormattedDataForLink);
+      }
+      await PostHR365HDMExternalEmailData(finalTemplate);
+   } catch(error){
+      if (isStringValidated(JSON.parse(ticketProp)?.[0]?.MailBox)) {
+        from = JSON.parse(ticketProp)?.[0]?.MailBox
+      }
+      body = body.replaceAll('</p>', '<br>').replaceAll('<p>', '')
+      let finalTemplate = {
+        cC: settings?.IsCCDisabled == 'On' ? '' : replyType === 'private note' ? CCMailsForSpUILITY?.join() : '',
+        From: from,
+        To: to.join(';'),
+        Body: body,
+        Subject: sub
+      };
+
+      await PostHR365HDMExternalEmailData(finalTemplate);
+   }
+  }
+
+  const sendMail = async (commentNo) => {
+      let starRatinghtml = "";
+      let CCMailsForSpUILITY = [];
+      let CCMails = [];
+      let InternalType = JSON?.parse(ticketProp)?.[0]?.InternalExtrenal;
+      let ccemailid = JSON.parse(ticketProp)?.[0]?.CCMail;
+    
+      let SendComments =  CommentsForReply
+        ?.filter(c => c?.CommentType === "Reply")
+        ?.sort((a, b) => {
+          return new Date(b?.CommentedDate).getTime() - new Date(a?.CommentedDate).getTime();
+        });
+
+      const filterDepartments = TeamsData?.filter(item=> item.Title === ticketData?.DepartmentName);
+
+      const siteUsers = await getSiteUsers();
+      
+      if (filterDepartments?.length > 0) {
+        if (RequesterEmailTemp?.EmailSentTo?.includes('Teams Supervisors')) {
+          if (filterDepartments?.[0].Supervisor1Id.length) {
+            filterDepartments[0].Supervisor1Id?.map((x) => {
+              var finalemail = siteUsers?.filter((i) => {
+                return i.Id == x
+              })
+              if (finalemail.length) {
+
+                CCMails?.push(finalemail[0].Email);
+              }
+
+            })
+          };
+        };
+      }
+
+    if (RequesterEmailTemp?.EmailSentTo?.includes('Teams Members')) {
+      if (filterDepartments?.[0].Teammembers1Id.length) {
+        filterDepartments?.[0].Teammembers1Id?.map((x) => {
+          var finalemail = siteUsers?.filter((i) => {
+            return i.Id == x
+          })
+
+          if (finalemail.length) {
+
+            CCMails?.push(finalemail[0].Email);
+          }
+        })
+      };
+    };
+
+    if (RequesterEmailTemp?.EmailSentTo?.includes('Assignee')) {
+      CCMails?.push(ticketAssignedToMail);
+    };
+
+    const updatedAttachments = attachments?.length > 0
+      ? attachments?.map(file => {
+          const originalName = file.name || "file";
+
+          const cleanName = originalName.replace(
+            /[`~!@#$%^&*()|+\=?;:'",<>\\\/{}\[\]]/g,
+            "_"
+          );
+          return {
+            ...file,
+            name: `${commentNo}___${cleanName}`,
+          };
+        })
+      : attachments;
+
+    const AttachmentURLS = updatedAttachments?.map(file => ({
+      Url: `${baseURL}/Lists/HR365HDMTickets/Attachments/${ticketID}/${file.name}`,
+      Name: file.name.includes("___")
+        ? file.name.split("___")[1]
+        : file.name,
+    }));
+
+    let TagAnchorAttachment = '';
+    AttachmentURLS?.forEach((item) => {
+      const Link = `<a target="_blank" href="${item?.Url}">${item?.Name}</a>`;
+      TagAnchorAttachment += Link + '<br>';
+    })
+
+    let CommentBodyMaile: any
+
+    let fromemail;
+    if (
+      settings?.DefaultAssignee == null ||
+      settings?.DefaultAssignee == undefined ||
+      settings?.DefaultAssignee == ""
+    ) {
+      fromemail = "no-reply@sharepointonline.com";
+    } else {
+      fromemail = settings?.DefaultAssignee;
+    }
+
+    if (((ReqEmail?.split('@')[1] == fromemail.split("@")[1]) && settings?.DefaultAssignee != "no-reply@sharepointonline.com") || (InternalType == "External" && settings?.DefaultAssignee != "no-reply@sharepointonline.com")) {
+      if (generatedIssueID != null) {
+        var date = new Date().toISOString();
+        var dateclosed = moment(date).format('MM/DD/YYYY');
+        hrperurl1 = "https://customervoice.m365online.us/zs/AlzB1B?TicketID=" + ticketSQNo?.split('#')[1] + "&?TicketTitle=" + ticketTitle + "&?Question=" + ticketData?.SurveyQuestion + "&?tempid=" + generatedIssueID + "&?SID=" + settings?.DefaultAssignee + "&?Date=" + dateclosed;
+      }
+      starRatinghtml = '<div >' +
+        '<div  style="display:flex;align-items:center;justify-content:center;"><p style="font-size:17px;font-weight:600">How satisfied are you with our customer service?</p></div>' +
+        '<div  style="display:flex;flex-wrap:wrap;justify-content:center;">' +
+        '<p  style ="border:1px solid; padding:5px 8px; margin:10px; border-radius:5px;border-color: #E41508; " > <span ><a style="color: #E41508; text-decoration:none;" href="' + hrperurl1 + '&rating=1">Very Dissatisfied</a></p></p > ' +
+        '<p  style ="border:1px solid; padding:5px 8px; margin:10px; border-radius:5px; border-color: #C05407;" > <span ><a style="color: #C05407; text-decoration:none;" href="' + hrperurl1 + '&rating=2">Dissatisfied</a></p></p > ' +
+        '<p  style ="border:1px solid; padding:5px 8px; margin:10px; border-radius:5px; border-color: #9E6900;" > <span ><a style="color: #9E6900; text-decoration:none;" href="' + hrperurl1 + '&rating=3">Fair</a></p></p > ' +
+        '<p  style ="border:1px solid; padding:5px 8px; margin:10px; border-radius:5px; border-color:#5E8000;" > <span ><a style="color: #5E8000; text-decoration:none;" href="' + hrperurl1 + '&rating=4">Satisfied</a></p></p > ' +
+        '<p style ="border:1px solid; padding:5px 8px; margin:10px; border-radius:5px;border-color: #158901 ;" > <span><a style="color: #158901; text-decoration:none;" href="' + hrperurl1 + '&rating=5">Very Satisfied</a></p></p > ' +
+        '</div >'
+    } else {
+      let taskUrl = `${baseURL}#/Ticket/${generatedIssueID}`;
+      
+      starRatinghtml = '<div >' +
+        '<div  style="display:flex;align-items:center;justify-content:center;"><p style="font-size:17px;font-weight:600">How satisfied are you with our customer service?</p></div>' +
+        '<div  style="display:flex;flex-wrap:wrap;justify-content:center;">' +
+        '<p  style ="border:1px solid; padding:5px 8px; margin:10px; border-radius:5px;border-color: #E41508; " > <span ><a style="color: #E41508; text-decoration:none;" href="' + taskUrl + '&rating=1">Very Dissatisfied</a></p></p > ' +
+        '<p  style ="border:1px solid; padding:5px 8px; margin:10px; border-radius:5px; border-color: #C05407;" > <span ><a style="color: #C05407; text-decoration:none;" href="' + taskUrl + '&rating=2">Dissatisfied</a></p></p > ' +
+        '<p  style ="border:1px solid; padding:5px 8px; margin:10px; border-radius:5px; border-color: #9E6900;" > <span ><a style="color: #9E6900; text-decoration:none;" href="' + taskUrl + '&rating=3">Fair</a></p></p > ' +
+        '<p  style ="border:1px solid; padding:5px 8px; margin:10px; border-radius:5px; border-color:#5E8000;" > <span><a style="color: #5E8000; text-decoration:none;" href="' + taskUrl + '&rating=4">Satisfied</a></p></p > ' +
+        '<p  style ="border:1px solid; padding:5px 8px; margin:10px; border-radius:5px;border-color: #158901 ;" > <span ><a style="color: #158901; text-decoration:none;" href="' + taskUrl + '&rating=5">Very Satisfied</a></p></p > ' +
+        '</div >'
+    }
+    let latestReplyComments = SendComments;
+    if (settings?.TicketThreadToggle === "On") {
+      if (settings?.TicketThread < SendComments.length) {
+        latestReplyComments = latestReplyComments?.slice(0, settings?.TicketThread);
+      }
+    }
+
+    if (settings?.TicketThreadToggle === "null") {
+      CommentBodyMaile = [];
+      for (let i = 0; i < latestReplyComments.length; i++) {
+        let MailHTML = `<hr><span id='Comments10span631' style="font-weight: 600;">From: </span> ${latestReplyComments?.[i]?.CommentedBy}&#44 <br><span id='Comments10span632' style="font-weight: 600;">To: </span> ${latestReplyComments[i]?.CommentsTo}&#44
+        <br>
+        <span id='Comments10span633'>${(CheckUri(latestReplyComments[i]?.CommentBody?.replace(/&nbsp;/g, ' ')))}</span>`;
+        CommentBodyMaile?.push(MailHTML);
+      };
+      CommentBodyMaile = globalMessage?.concat(CommentBodyMaile);
+      CommentBodyMaile = CommentBodyMaile
+
+    } else {
+      CommentBodyMaile = globalMessage
+    }
+    
+
+    if (RequesterEmailTemp?.IsActive == "Yes") {
+      const CustomFromName = JSON.parse(settings?.CustomFormSettings)?.[0]?.FormName;
+      
+      let _sub1 = RequesterEmailTemp?.Subject.replaceAll("[ticket.subject]", ticketTitle);
+      let _sub2 = _sub1.replaceAll("[ticket.id]", "[" + ticketSQNo + "]")?.replaceAll("[Custom_Form]", CustomFromName);
+      _sub2 = _sub2.replaceAll('[ticket.url]', "").replaceAll('[ticket.attachment_url]', TagAnchorAttachment).replaceAll('[ticket.description]', comment).replaceAll('[ticket.latest_comment]', CommentBodyMaile).replaceAll('[ticket.agent.name]', ticketData?.AssignedTo?.Title).replaceAll('[ticket.agent.email]', ticketAssignedToMail).replaceAll('[ticket.satisfaction_survey]', "").replaceAll('[ticket.mergeid]', "").replaceAll('[ticket.isplitidd]', "").replaceAll('[ticket.status]', ticketData?.Status).replaceAll('[ticket.ticket_type]', ticketData?.RequestType).replaceAll('[ticket.priority]', ticketData?.Priority).replaceAll('[ticket.requester.name]', ticketData?.RequesterName).replaceAll('[ticket.from_email]', ReqEmail);
+      _sub2 = _sub2.replaceAll(null, '').replaceAll(undefined, '').replaceAll('[ticket.satisfaction_survey_withStar]', starRatinghtml);
+
+      let _body1 = RequesterEmailTemp?.Body.replaceAll("[ticket.subject]", ticketTitle);
+      let _body = _body1.replaceAll("[ticket.agent.name]", ticketData?.AssignedTo?.Title).replaceAll('[ticket.attachment_url]', TagAnchorAttachment);
+      let _body2 = _body.replaceAll("[ticket.latest_comment]", CommentBodyMaile);
+      let _body3 = _body2.replaceAll("[ticket.requester.name]", ticketData?.RequesterName);
+      _body3 = _body3.replaceAll('[ticket.attachment_url]', TagAnchorAttachment).replaceAll("[ticket.id]", ticketSQNo)?.replaceAll("[Custom_Form]", CustomFromName).replaceAll('[ticket.description]', comment).replaceAll('[ticket.agent.email]', ticketAssignedToMail).replaceAll('[ticket.mergeid]', "").replaceAll('[ticket.isplitidd]', "").replaceAll('[ticket.status]', ticketData?.Status).replaceAll('[ticket.ticket_type]', ticketData?.RequestType).replaceAll('[ticket.priority]', ticketData?.Priority).replaceAll('[ticket.from_email]', ReqEmail);
+      _body3 = _body3.replaceAll(null, '').replaceAll(undefined, '').replaceAll('[ticket.satisfaction_survey_withStar]', starRatinghtml);
+      let taskUrl = `${baseURL}#/Ticket/${generatedIssueID}`;
+
+      let _body4 = _body3.replaceAll(
+        "[ticket.url]",
+        `<a href='${(taskUrl.replaceAll('Survey','Ticket'))}'>${ticketSQNo}</a>`
+      ).replaceAll('[ticket.satisfaction_survey]',
+        `<a href='${(taskUrl.replaceAll('Ticket','Survey'))}'>Survey Link</a>`
+      );
+
+
+      let sendEmailIds = [];
+      const siteUsers = await getSiteUsers();
+      const searchedUser = siteUsers?.filter(i=> i.Email == ticketAssignedToMail);
+      
+
+      var filtered = ListUsers?.filter((item) => {
+        return item.UsersId == JSON.parse(searchedUser?.[0]?.Id);
+      });
+
+      filtered?.map((i) => {
+        sendEmailIds.push(i.Email);
+      });
+
+      var filterGC = siteUsers?.filter((item) => {
+        return item?.Id == JSON.parse(searchedUser?.[0]?.Id);
+      });
+
+      filterGC?.map((i) => {
+        if (i.Email != null && i.Email != undefined) {
+          sendEmailIds.push(i.Email);
+        }
+      });
+      
+      let uniqueEmails = [...new Set(sendEmailIds)];
+
+      let ccEmailids = [];
+      if (ccemailid == null || ccemailid == undefined || ccemailid == "") {
+      } else {
+        let ccEmail = ccemailid.split(",");
+        ccEmail?.map((item) => {
+          ccEmailids.push(item);
+        });
+      }
+
+      if (replyCcInput && replyCcInput?.length > 0) {
+        CCMailsForSpUILITY?.push(...replyCcInput);
+      }
+
+      let uniqueccEmails = [...new Set(ccEmailids)];
+
+      if (uniqueEmails.length > 0) {
+        let FinalUniqueEmails = uniqueEmails?.filter(item => item !== "");
+        
+        let fromemail = "no-reply@sharepointonline.com";
+
+        if (
+          ticketAssignedToMail == null ||
+          ticketAssignedToMail == undefined ||
+          ticketAssignedToMail == ""
+        ) {
+          fromemail = "no-reply@sharepointonline.com";
+        } else {
+          fromemail = ticketAssignedToMail;
+        }
+
+        if (
+          settings?.AllowedExtrenalDomain ||
+          settings?.AllowedExtrenalDomain != undefined ||
+          settings?.AllowedExtrenalDomain != ""
+        ) {
+            _body4 = TemplateReplacerForCusrtomColumns(_body4, ticketData);
+            _sub2 = TemplateReplacerForCusrtomColumns(_sub2, ticketData);
+
+          if (fromemail?.includes(settings?.AllowedExtrenalDomain?.trim()) || settings?.EmailsFromMailbox == "On" || InternalType != 'Internal') {
+             postExternal(fromemail, FinalUniqueEmails, _body4, _sub2, CCMailsForSpUILITY);
+          } else {
+            sendEmailReply(
+              _sub2,
+              _body4,
+              FinalUniqueEmails,
+              fromemail,
+              CCMailsForSpUILITY
+            );
+          }
+          
+        }
+      }
+    }
+    
+  }
+  
   const handleReply = async () => {
+    const commentNo = (CommentsForReply?.length + 1).toString();
     let CommentsTo = '';
     let CommentsToEmail = '';
     let ticketAction = [];
     let SLAResponse: '';
    
     if(replyType === 'reply'){
-      if (ticketData?.RequesterEmail?.toLowerCase() == userDetails?.Email?.toLowerCase()) {
+      if (ReqEmail?.toLowerCase() == userDetails?.Email?.toLowerCase()) {
         CommentsTo = preAssignName == null || preAssignName == undefined || preAssignName == "" ? "this ticket" : preAssignName;
         CommentsToEmail = preAssignName == null || preAssignName == undefined || preAssignName == "" ? "this ticket" : preAssignName;
       } else {
         CommentsTo = ticketData?.RequesterName;
-        CommentsToEmail = ticketData?.RequesterEmail;
+        CommentsToEmail = ReqEmail;
       };
-      const commentNo = (CommentsForReply?.length + 1).toString();
       const newComment = {
         CommentNo: commentNo,
         CommentedBy: userDetails?.FullName,
@@ -356,7 +813,7 @@ const TicketDetails = ({ route }) => {
         ? [...CommentsForReply, newComment]
         : [newComment];
       setCommentsForReply(updatedComments);
-      if (CommentsToEmail == ticketData?.RequesterEmail && SLAResponseDone == "No") {
+      if (CommentsToEmail == ReqEmail && SLAResponseDone == "No") {
         SLAResponse = "Yes";
         if (isArrayValidated(SLAResponseInfoData)) {
           let result: any;
@@ -396,7 +853,7 @@ const TicketDetails = ({ route }) => {
         SLAResponseInfo: JSON.stringify(SLAResponseInfoData),
       };
       try {
-        const updateUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items(${ticketData?.ID})`;
+        const updateUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items(${ticketID})`;
        
         const res = await axios.post(updateUrl, finalTemplate, {
           headers: {
@@ -419,10 +876,11 @@ const TicketDetails = ({ route }) => {
               );
               attachments[i].name = `${commentNo}___${cleanName}`;
             }
-            await uploadAttachments("HR365HDMTickets", ticketData?.ID, attachments);
+            await uploadAttachments("HR365HDMTickets", ticketID, attachments);
           }
           setIsOpenReply(false);
           setAttachments([]);
+          await sendMail(commentNo);
           console.log("Ticket updated successfully:");
         }
       } catch (error) {
@@ -438,7 +896,7 @@ const TicketDetails = ({ route }) => {
         CommentedDate: new Date().toISOString(),
         CommentType: "Private",
         CommentBody: encodeURIComponent(comment).replace(/"/g, '|$|'),
-        CommentsTo: ticketData?.RequesterEmail,
+        CommentsTo: ReqEmail,
         CommentsToName: 'Private',
         NoofAttachments: "",
         TimeSpend: TimeSpendValue,
@@ -455,12 +913,12 @@ const TicketDetails = ({ route }) => {
         modifiedby: userDetails?.FullName,
         date: new Date().toISOString(),
       });
-      if (JSON.parse(ticketData?.ActionOnTicket) == null ||
-        JSON.parse(ticketData?.ActionOnTicket) == undefined ||
-        JSON.parse(ticketData?.ActionOnTicket)?.length == 0
+      if (JSON.parse(ticketAction) == null ||
+        JSON.parse(ticketAction) == undefined ||
+        JSON.parse(ticketAction)?.length == 0
       ) {
       } else {
-        ticketAction.push(...JSON.parse(ticketData?.ActionOnTicket))
+        ticketAction.push(...JSON.parse(ticketAction))
       }
       let finalTemplate = {
         Comments: JSON.stringify(updatedComments),
@@ -470,7 +928,7 @@ const TicketDetails = ({ route }) => {
       };
        
       try {
-        const updateUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items(${ticketData?.ID})`;
+        const updateUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items(${ticketID})`;
        
         const res = await axios.post(updateUrl, finalTemplate, {
           headers: {
@@ -492,7 +950,7 @@ const TicketDetails = ({ route }) => {
               );
               attachments[i].name = `${commentNo}___${cleanName}`;
             }
-            await uploadAttachments("HR365HDMTickets", ticketData?.ID, attachments);
+            await uploadAttachments("HR365HDMTickets", ticketID, attachments);
           }
           setIsOpenReply(false);
           setAttachments([]);
@@ -502,16 +960,12 @@ const TicketDetails = ({ route }) => {
         console.error('Error while creating ticket:', error);
       }
     }
-   
   }
+  
   return (
     <>
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0} // Adjust if needed
-        >
+    <View style={{ flex: 1 }}>
+     
         <ScrollView
           style={{flex: 1}}
           contentContainerStyle={{}}
@@ -520,7 +974,7 @@ const TicketDetails = ({ route }) => {
           <TouchableWithoutFeedback onPress={closeAllDropdowns}>
             <View style={[styles.container, { flexGrow: 1 }]}>
               <View style={[styles.row, {marginVertical: 6}]}>
-                <Text style={styles.seqNumber}>{ticketData?.TicketSeqnumber}</Text>
+                <Text style={styles.seqNumber}>{ticketSQNo}</Text>
                 <Text style={styles.dateText}>{moment(ticketData?.TicketCreatedDate).format("MM/DD HH:mm")}</Text>
               </View>
               <View style={styles.card}>
@@ -541,10 +995,11 @@ const TicketDetails = ({ route }) => {
                     <Feather name="edit-2" size={20} color="#026367" />
                   </TouchableOpacity>
                 </View>
-                <Text style={styles.subtitle}>{ticketData?.Title}</Text>
+                <Text style={styles.subtitle}>{ticketTitle}</Text>
                 <View style={styles.row}>
-                  <Text style={styles.halfText}>{JSON.parse(ticketData?.TicketProperties)?.[0]?.DepartmentCode}</Text>
-                  <Text style={styles.halfText}>AC</Text>
+                  <Text></Text>
+                  <Text style={styles.halfText}>{DeptCode}</Text>
+                  {/* <Text style={styles.halfText}>AC</Text> */}
                   <Text style={styles.halfText}>{ticketData?.Services}</Text>
                 </View>
               </View>
@@ -552,7 +1007,7 @@ const TicketDetails = ({ route }) => {
                 <View style={styles.personaRow}>
                   <Persona
                     name={ticketData?.RequesterName}
-                    mail={ticketData?.RequesterEmail}
+                    mail={ReqEmail}
                   />
                   <Text> describes as</Text>
                 </View>
@@ -739,11 +1194,11 @@ const TicketDetails = ({ route }) => {
                         </View>
                     }
                     <View style={[styles.editorBox, {minHeight: replyType === 'private note' ? 100 : 'unset'}]}>
-                      <TouchableOpacity
-                        activeOpacity={1}
-                        onPress={() => richTextRef.current?.focusContentEditor()}
-                        style={{ minHeight: 150 }}
-                      >
+                      <View style={styles.replyHeader}>
+                        <TouchableOpacity onPress={()=>{setShowReplyCCModal(true)}}>
+                          <Ionicons name="person-outline" size={20} color="#352f2fff"/>
+                        </TouchableOpacity>
+                      </View>
                       <RichEditor
                         ref={richTextRef}
                         androidLayerType="software"
@@ -761,7 +1216,6 @@ const TicketDetails = ({ route }) => {
                           cssText: "body {font-family: Roboto; font-size: 16px;}",
                         }}
                       />
-                      </TouchableOpacity>
                     </View>
                     <View style={[styles.attachmentRow,{ marginTop: 10, }]}>
                       <TouchableOpacity onPress={pickAttachment} style={styles.attachmentButton}>
@@ -864,7 +1318,7 @@ const TicketDetails = ({ route }) => {
         >
           <View style={styles.modalOverlay}>
             <View style={styles.modalContainer}>
-              <View style={{width: '100%', marginBottom: 10,}}>
+              <View style={{width: '100%', marginBottom: 10}}>
                 <PeoplePickerMain
                   fieldName="Cc"
                   values={{ Cc: ccInput }}
@@ -876,6 +1330,33 @@ const TicketDetails = ({ route }) => {
                   <Text style={styles.saveButtonText}>Save</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.cancelButton} onPress={handleCancelCC}>
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+        {/* replycc */}
+        <Modal
+          visible={showReplyCCModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowReplyCCModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <View style={{width: '100%', marginBottom: 10,}}>
+                <PeoplePickerMain
+                  fieldName="Cc"
+                  values={{ Cc: replyCcInput }}
+                  setFieldValue={handleSetReplyCcValue}
+                />
+              </View>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity style={styles.saveButton} onPress={handleSaveReplyCC}>
+                  <Text style={styles.saveButtonText}>Save</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.cancelButton} onPress={handleReplyCancelCC}>
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
@@ -900,7 +1381,7 @@ const TicketDetails = ({ route }) => {
           visible={showSubTicketModal}
           transparent={true}
           animationType="slide"
-          onRequestClose={() => showSubTicketModal(false)}
+          onRequestClose={() => setShowSubTicketModal(false)}
         >
           <NotificationProvider>
             <View style={styles.modalOverlay}>
@@ -910,9 +1391,7 @@ const TicketDetails = ({ route }) => {
             </View>
           </NotificationProvider>
         </Modal>
-      </KeyboardAvoidingView>
-  </SafeAreaView>
-      
+    </View>
     </>
   );
 };
@@ -1293,5 +1772,15 @@ const styles = StyleSheet.create({
     padding: 5,
     marginLeft: 10,
   },
+  replyHeader: {
+    flexDirection: 'row',
+    alignItems: 'right',
+    justifyContent: 'flex-end',
+    flexWrap: 'wrap',
+    backgroundColor: '#efefef',
+    borderColor: '#e2e2e2',
+    padding: 10,
+    borderBottomWidth: 1,
+  }
 });
 

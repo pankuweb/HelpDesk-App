@@ -255,27 +255,25 @@ export function useFetchGraphUsers() {
   };
 }
 
-export function useFetchEmailTemplates() {
+export function useFetchEmailTemplates(title) {
   const dispatch = useDispatch();
 
   const query = useQuery({
-    queryKey: ["fetchEmailTemplates"],
-    queryFn: async () => {
-      const data = await fetchHR365HDMEmailTemplates();
-      return data;
-    },
+    queryKey: ["fetchEmailTemplates", title],
+    queryFn: async () => await fetchHR365HDMEmailTemplates(title),
     onError: (err) => console.error("fetchEmailTemplates error:", err),
+    enabled: !!title,
     refetchOnWindowFocus: false,
   });
 
   useEffect(() => {
-    if (query?.isSuccess && query?.data?.length) {
-      dispatch(setEmailTemplates(query?.data));
+    if (query.isSuccess && query.data?.length) {
+      dispatch(setEmailTemplates(query.data));
     }
-  }, [query?.isSuccess, query?.data, dispatch]);
+  }, [query.isSuccess, query.data, dispatch]);
 
   return {
     ...query,
-    refetch: query?.refetch,
+    refetch: query.refetch,
   };
 }

@@ -41,7 +41,7 @@ export async function fetchUsers() {
     const token: any = state?.login?.token;
     const baseURL: any = state?.login?.tanent;
     const email: any = state?.login?.email;
-    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMUsers')/items?$top=5000&$select=ID,Title,Department,Email,Users/Id,Users/Title,Users/EMail,Users/UserName&$expand=Users`;
+    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMUsers')/items?$top=5000`;
     const res = await axios.get(apiUrl, {
       headers: {
         Accept: "application/json;odata=nometadata",
@@ -774,7 +774,8 @@ export async function searchGraphUsersData(name: string) {
         Accept: "application/json",
       },
     });
-    
+        console.log(res, 'res');
+
     return res?.data?.value ?? [];
   } catch (error) {
     console.error("searchGraphUsers error:", error.response?.data || error);
@@ -933,7 +934,7 @@ export async function fetchHR365HDMRequestType() {
   }
 }
 
-export async function fetchHR365HDMEmailTemplates() {
+export async function fetchHR365HDMEmailTemplates(title) {
   try {
     const state: any = store?.getState();
     const token: any = state?.login?.token;
@@ -950,7 +951,9 @@ export async function fetchHR365HDMEmailTemplates() {
       },
     });
 
-    return res?.data?.value ?? [];
+    const FilteredTemplate = res?.data?.value?.filter(item=> item.Title === title)
+
+    return FilteredTemplate?.[0] ?? {};
   } catch (error) {
     console.error('Error:', error);
     return [];
@@ -987,6 +990,182 @@ export async function fetchAttachments(
     return attachments;
   } catch (error: any) {
     console.error("Error while fetching attachments:", error?.response?.data || error);
+    return [];
+  }
+}
+
+export async function PostLinkReportData(event,FormattedDataForLink) {
+    
+  const state: any = store?.getState();
+  const baseURL: any = state?.login?.tanent;
+  const token: any = state?.login?.token;
+
+  try {
+    for (const ele of FormattedDataForLink ?? []) {
+      const url = `${baseURL}/_api/web/lists/getbytitle('HR365HDMMTEmailsReport')/items`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json;odata=nometadata',
+          'Content-Type': 'application/json;odata=nometadata',
+          'odata-version': '',
+          Authorization: `Bearer ${token}`,
+          'IF-MATCH': '*',
+          'X-HTTP-Method': 'POST',
+        },
+        body: JSON.stringify(ele),
+      });
+
+      if (!response.ok) {
+        console.error(
+          "Unexpected response:",
+          response.status,
+          await response.text()
+        );
+        event.completed({ allowEvent: true });
+        return;
+      }
+
+    await response.json();
+  }
+  } catch (error) {
+    console.error("Error in PostSPData:", error);
+    event.completed?.({ allowEvent: true });
+  }
+}
+
+export async function PostSPData(event, subject, body, CC,deptCode,NewTicketID,AllLinks,FormattedDataForLink) {
+  const state: any = store?.getState();
+  const baseURL: any = state?.login?.tanent;
+  const token: any = state?.login?.token;
+
+  try {
+    const requestBody = {
+      Title: event?.emailUniqueId,
+      EmailUniqueID: event?.emailUniqueId,
+      Subject: subject,
+      TicketId: NewTicketID,
+      toWho: event?.userId,
+      ByWho: event?.senderId,
+      Body: body,
+      OpenedEmails: "0",
+      TeamCode: deptCode,
+    };
+
+    const url = `${baseURL}/_api/web/lists/getbytitle('HR365HDMMTEmails')/items`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json;odata=nometadata',
+          'Content-Type': 'application/json;odata=nometadata',
+          'odata-version': '',
+          Authorization: `Bearer ${token}`,
+          'IF-MATCH': '*',
+          'X-HTTP-Method': 'POST',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+    if (response.ok) {      
+      if (AllLinks?.length > 0) {
+        await PostLinkReportData(event, FormattedDataForLink);
+      }
+
+      return await response.json();
+    } else {
+      console.error("POSTSPDATA ERROR OCCURRED:", response.status, response.statusText);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error in PostSPData:", error);
+    event.completed?.({ allowEvent: true });
+  }
+}
+
+
+export async function postMailTrackerData(FinalData, requestData,sub,body,CCMailsForSpUILITY,deptCode,NewTicketID,AllLinks=[], FormattedDataForLink) {
+
+  try {
+    const response = await fetch(`https://mt.msapps365.com/api/v1/create`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(FinalData),
+    });
+
+    if (!response.ok) {
+      console.log("MailTracker API failed:", response.status, response.statusText);
+      return;
+    }
+
+    await PostSPData(
+      requestData,
+      sub,
+      body,
+      [...new Set(CCMailsForSpUILITY?.flat())],
+      deptCode,
+      NewTicketID,
+      AllLinks,
+      FormattedDataForLink
+    );
+
+  } catch (error) {
+    console.log("Error occurred:", error);
+  }
+}
+
+export async function PostHR365HDMExternalEmailData(finalTemplate) {
+  const state: any = store?.getState();
+  const baseURL: any = state?.login?.tanent;
+  const token: any = state?.login?.token;
+
+  try {
+    const url = `${baseURL}/_api/web/lists/getbytitle('HR365HDMExternalEmailData')/items`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json;odata=nometadata',
+          'Content-Type': 'application/json;odata=nometadata',
+          'odata-version': '',
+          Authorization: `Bearer ${token}`,
+          'IF-MATCH': '*',
+          'X-HTTP-Method': 'POST',
+        },
+        body: JSON.stringify(finalTemplate),
+      });
+
+    if (response.ok) {      
+      console.log('okkkkkl');
+      
+    } else {
+      console.error("error:", response.status, response.statusText);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error:", error);
+  }
+}
+
+export async function sendGraphMail(emailMessage) {
+  try {
+    const state: any = store?.getState();
+    const token: string = state?.login?.tokenGraph;
+
+    const graphUrl = `https://graph.microsoft.com/v1.0/me/sendMail`;
+
+    const res = await axios.post(graphUrl, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    });
+
+    return res?.data?.value ?? [];
+  } catch (error) {
+    console.error("sendGraphMail error:", error.response?.data || error);
     return [];
   }
 }
