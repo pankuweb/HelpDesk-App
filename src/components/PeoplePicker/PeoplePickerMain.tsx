@@ -4,7 +4,7 @@ import { MultiSelect } from 'react-native-element-dropdown';
 import PeoplePickerOption from './PeoplePickerOption';
 import { RenderSelectedItem } from '../RenderSelectedItem';
 import { searchGraphUsersData } from '../../backend/RequestAPI';
-import { View, Modal, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Modal, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 import { Popup } from '@sekizlipenguen/react-native-popup-confirm-toast';
 import { setNonM365UsersData } from '../../redux/slices/userSlice';
 import { useDispatch } from 'react-redux';
@@ -16,16 +16,31 @@ export default function PeoplePickerMain({ fieldName, values, setFieldValue }) {
   const [UsersOptions, setUsersOption] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [nonM365UList, setNonM365UList] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
   const { show } = useNotification();
   
   const dispatch = useDispatch();
   const multiRef = useRef(null);
+  const searchInputRef = useRef(null);
+  
   const selectedValues = values?.[fieldName] || [];
   const selectedItems = useMemo(() =>
     selectedValues
       .map(val => UsersOptions.find(opt => opt.value === val))
       .filter(Boolean)
   , [selectedValues, UsersOptions]);
+  
+  const filteredOptions = useMemo(() => {
+    if (searchText.length < 3) return [];
+    const lowerText = searchText.toLowerCase();
+    return UsersOptions.filter(opt => {
+      const isMatch = opt?.label?.toLowerCase()?.includes(lowerText) || 
+                      opt?.Users?.EMail?.toLowerCase()?.includes(lowerText);
+      const isNotSelected = !selectedValues.includes(opt.value);
+      return isMatch && isNotSelected;
+    });
+  }, [searchText, UsersOptions, selectedValues]);
+  
   const showPlus = useMemo(() => {
     if (searchText.length < 3) return false;
     const lowerText = searchText.toLowerCase();
@@ -34,6 +49,7 @@ export default function PeoplePickerMain({ fieldName, values, setFieldValue }) {
       opt?.Users?.EMail?.toLowerCase()?.includes(lowerText)
     );
   }, [searchText, UsersOptions]);
+  
   const unSelectItem = useCallback((itemToRemove) => {
     const newSelected = selectedValues.filter(s => s !== itemToRemove.value);
     setFieldValue(fieldName, newSelected);
@@ -41,6 +57,7 @@ export default function PeoplePickerMain({ fieldName, values, setFieldValue }) {
 
   const openModal = useCallback(() => {
     setShowModal(true);
+    setShowDropdown(false);
   }, []);
 
   const handleModalSubmit = useCallback((name: string, email: string) => {
@@ -109,6 +126,7 @@ export default function PeoplePickerMain({ fieldName, values, setFieldValue }) {
   const handleSearch = async (text: string) => {
     setSearchText(text);
     if (text.length >= 3) {
+      setShowDropdown(true);
       try {
         const searchedUser = await searchGraphUsersData(text);
         const updatedUser = searchedUser
@@ -132,15 +150,19 @@ export default function PeoplePickerMain({ fieldName, values, setFieldValue }) {
       } catch (error) {
         console.error('Error fetching Graph data:', error);
       }
+    } else {
+      setShowDropdown(false);
     }
   };
 
-  const handleChange = (selectedValues) => {
-    setFieldValue(fieldName, selectedValues);
-    setSearchText('');
-    if (multiRef.current) {
-      multiRef.current.close();
+  const handleSelectOption = (option) => {
+    if (selectedValues.includes(option.value)) {
+      return;
     }
+    const newSelected = [...selectedValues, option.value];
+    setFieldValue(fieldName, newSelected);
+    setSearchText('');
+    setShowDropdown(false);
   };
 
   const isEmail = searchText.includes('@');
@@ -149,59 +171,82 @@ export default function PeoplePickerMain({ fieldName, values, setFieldValue }) {
 
   return (
     <>
-      {
-        selectedItems?.length > 0 ?
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 }}>
-            {selectedItems?.map((item) => (
+      {selectedItems?.length > 0 && (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 }}>
+          {selectedItems?.map((item) => {
+            const displayText = item?.label || item?.value || '';
+            const truncatedText = displayText.length > 17 
+              ? displayText.substring(0, 17) + '...' 
+              : displayText;
+            
+            return (
               <RenderSelectedItem
                 key={item.value}
-                item={item}
+                item={{ ...item, label: truncatedText }}
                 unSelect={unSelectItem}
                 styles={styles}
               />
-            ))}
-          </View> : ''
-      }
+            );
+          })}
+        </View>
+      )}
      
-      <MultiSelect
-        ref={multiRef}
-        style={styles.dropdown}
-        placeholderStyle={styles.placeholder}
-        selectedTextStyle={styles.selectedText}
-        data={UsersOptions}
-        labelField="label"
-        valueField="value"
-        placeholder="Select Options"
-        value={selectedValues}
-        onChange={handleChange}
-        renderRightIcon={() =>
-          showPlus ? (
+      <View style={styles.customSearchContainer}>
+        <TextInput
+          ref={searchInputRef}
+          style={styles.customSearchInput}
+          placeholder="Enter Name"
+          placeholderTextColor="#000"
+          value={searchText}
+          onChangeText={handleSearch}
+          onFocus={() => {
+            if (searchText.length >= 3) {
+              setShowDropdown(true);
+            }
+          }}
+        />
+        <View style={styles.searchIconContainer}>
+          {showPlus ? (
             <TouchableOpacity
-              onPress={() => {
-                if (multiRef.current) multiRef.current.close();
-                openModal();
-              }}
+              onPress={openModal}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="add" size={18} color="#333" />
+              <Ionicons name="add-circle" size={22} color="#026367" />
             </TouchableOpacity>
           ) : (
-            <Ionicons name="chevron-down" size={18} color="#333" />
-          )
-        }
-        containerStyle={styles.dropdownContainer}
-        itemTextStyle={styles.dropdownItem}
-        search
-        searchPlaceholder="Search..."
-        onChangeText={handleSearch}
-        visibleSelectedItem={false}
-        renderItem={option => {
-          const name = option?.Users?.Title;
-          const mail = option?.Users?.EMail;
-          if (!name || !mail) return null;
-          return <PeoplePickerOption name={name} mail={mail} />;
-        }}
-      />
+            <Ionicons name="chevron-down" size={20} color="#000" />
+          )}
+        </View>
+      </View>
+
+      {showDropdown && filteredOptions.length > 0 && (
+        <View style={styles.customDropdown}>
+          {filteredOptions.map((option, index) => {
+            const name = option?.Users?.Title;
+            const mail = option?.Users?.EMail;
+            if (!name || !mail) return null;
+            
+            return (
+              <TouchableOpacity
+                key={option.value || index}
+                style={styles.dropdownOptionItem}
+                onPress={() => handleSelectOption(option)}
+              >
+                <PeoplePickerOption name={name} mail={mail} />
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
+
+      {showDropdown && (
+        <TouchableOpacity
+          style={styles.backdrop}
+          activeOpacity={1}
+          onPress={() => setShowDropdown(false)}
+        />
+      )}
+
       <Modal
         visible={showModal}
         animationType="slide"
@@ -383,6 +428,8 @@ const styles = StyleSheet.create({
     marginLeft: 2,
     color: '#333',
     fontSize: 14,
+    numberOfLines: 1,
+    ellipsizeMode: 'tail',
   },
   image: {
     marginRight: 6,
@@ -390,5 +437,59 @@ const styles = StyleSheet.create({
   },
   requredStar: {
     color: "#a4262c",
+  },
+  customSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    backgroundColor: '#fff',
+    paddingHorizontal: 10,
+    height: 44,
+    marginBottom: 6,
+    position: 'relative',
+    zIndex: 1000,
+  },
+  customSearchInput: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: 'Roboto',
+    color: '#333',
+    paddingVertical: 0,
+  },
+  searchIconContainer: {
+    marginLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  customDropdown: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderTopWidth: 0,
+    maxHeight: 250,
+    zIndex: 1001,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  dropdownOptionItem: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    overflow: 'hidden',
+  },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 999,
   },
 });

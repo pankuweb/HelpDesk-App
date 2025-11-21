@@ -1356,4 +1356,45 @@ const styles = StyleSheet.create({
   requredStar: {
     color: "#a4262c",
   },
+  customSearchContainer: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  borderWidth: 1,
+  borderColor: '#ccc',
+  backgroundColor: '#fff',
+  paddingHorizontal: 10,
+  height: 44,
+  position: 'relative',
+  zIndex: 1000,
+},
+customSearchInput: {
+  flex: 1,
+  fontSize: 16,
+  fontFamily: 'Roboto',
+  color: '#333',
+  paddingVertical: 0,
+},
+searchIconContainer: {
+  marginLeft: 8,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+customDropdown: {
+  backgroundColor: '#fff',
+  borderWidth: 1,
+  borderColor: '#ccc',
+  borderTopWidth: 0,
+  zIndex: 1001,
+  elevation: 5,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.25,
+  shadowRadius: 3.84,
+},
+dropdownOptionItem: {
+  borderBottomWidth: 1,
+  borderBottomColor: '#f0f0f0',
+  overflow: 'hidden',
+},
+
 });
