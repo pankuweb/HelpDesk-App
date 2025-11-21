@@ -1156,7 +1156,7 @@ export async function sendGraphMail(emailMessage) {
 
     const graphUrl = `https://graph.microsoft.com/v1.0/me/sendMail`;
 
-    const res = await axios.post(graphUrl, {
+    const res = await axios.post(graphUrl, emailMessage,{
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: "application/json",
