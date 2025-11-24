@@ -39,6 +39,7 @@ import { fetchAttachments, getSiteUsers, PostHR365HDMExternalEmailData, postMail
 import RNFS from 'react-native-fs';
 import { Buffer } from 'buffer';
 import { TemplateReplacerForCusrtomColumns, encodeEmailData, replaceAnchorTags } from '../../../hooks/customHooks';
+import { Dropdown } from 'react-native-element-dropdown';
 
 const isStringValidated = (value) => {
   if (value == null || value == undefined || value == "") {
@@ -82,6 +83,8 @@ const TicketDetails = ({ route }) => {
   
   const navigation = useNavigation();
   const userDetails = useSelector((state) => state?.login?.user);
+   const departmentsListData = useSelector((state: RootState) => state.requests.departments);
+   const departmentsOptions = departmentsListData?.map((i)=> ({ label: i.Title, value: i.Title }));
  
   const [menuVisible, setMenuVisible] = useState(false);
   const [attachments, setAttachments] = useState([]);
@@ -97,6 +100,8 @@ const TicketDetails = ({ route }) => {
   const [showSubTicketModal, setShowSubTicketModal] = useState(false);
   const [consultant, setConsultant] = useState([]);
   const [isConsult, setISConsultant] = useState(false);
+  const [isTransfer, setISTransfer] = useState(false);
+  const [selectedTeams, setSelectedTeams] = useState('');
   const [preAssignName, setPreAssignName] = useState("");
   const [TimeSpendValue, setTimeSpendValue] = useState();
   const [MarkAsAnswer, setMarkAsAnswer] = useState("No");
@@ -111,7 +116,7 @@ const TicketDetails = ({ route }) => {
   }]);
   const [SLAResponseInfoData, setSLAResponseInfoData] = useState(isStringValidated(ticketData?.SLAResponseInfo) ? JSON.parse(ticketData?.SLAResponseInfo) : []);
   const [SLAResponseDone, setSLAResponseDone] = useState(isStringValidated(ticketData?.SLAResponseDone) ? ticketData?.SLAResponseDone : '',);
-   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
  
   const richTextRef = useRef(null);
   const descriptionRef = useRef(null);
@@ -253,10 +258,11 @@ const TicketDetails = ({ route }) => {
       descriptionRef.current.setContentHTML(content);
     }
   }, [ticketData?.TicketDescription]);
+
   useEffect(() => {
     setCommentsForReply(JSON.parse(ticketData?.Comments || "[]"));
-   
   }, [ticketData]);
+
   useEffect(() => {
     if (isOpenReply && replyType === 'reply' && (!comment || comment.trim() === '')) {
       const defaultContent = `
@@ -291,6 +297,21 @@ const TicketDetails = ({ route }) => {
       if (richTextRef.current) {
         richTextRef.current.setContentHTML(defaultContent);
       }
+    } else if (isOpenReply && isTransfer) {
+      const defaultContent = `
+        <p>Please take a look at this ticket</p>
+        <p>${ticketSQNo || ``}</p>
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+        <p>Regards</p>
+        <p style="margin-bottom: 4px;">${userDetails?.FullName || ``}</p>
+        <p style="margin-bottom: 4px;">${userDetails?.Department || ``}</p>
+        <p style="margin-bottom: 0;">${userDetails?.Mobile || ``}</p>
+      `;
+      setComment(defaultContent);
+      if (richTextRef.current) {
+        richTextRef.current.setContentHTML(defaultContent);
+      }
     } else {
       if (richTextRef.current) {
         richTextRef.current.setContentHTML('');
@@ -298,24 +319,30 @@ const TicketDetails = ({ route }) => {
       setComment('');
     }
   }, [isOpenReply, replyType, userDetails]); 
+
   const toggleMenu = (e) => {
     e.stopPropagation();
     setMenuVisible(!menuVisible);
   };
+
   const closeMenu = () => {
     setMenuVisible(false);
   };
+
   const toggleReplyOptions = (e) => {
     e.stopPropagation();
     setReplyOptionsVisible(!replyOptionsVisible);
   };
+
   const closeReplyReplyOptions = () => {
     setReplyOptionsVisible(false);
   };
+
   const closeAllDropdowns = () => {
     closeMenu();
     closeReplyReplyOptions();
   };
+
   const pickAttachment = async () => {
     try {
       const results = await pick({
@@ -331,9 +358,11 @@ const TicketDetails = ({ route }) => {
       }
     }
   };
+
   const removeAttachment = (index) => {
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
+
   const handleSaveCC = () => {
     if (ccInput.trim()) {
       console.log('Saving CC:', ccInput);
@@ -341,33 +370,42 @@ const TicketDetails = ({ route }) => {
     }
     setShowCCModal(false);
   };
+
   const handleCancelCC = () => {
     setCcInput('');
     setShowCCModal(false);
   };
+
   const handleSaveReplyCC = () => {
       setReplyCcInput(replyCcInput);
     setShowReplyCCModal(false);
   };
+
   const handleReplyCancelCC = () => {
     setReplyCcInput('');
     setShowReplyCCModal(false);
   };
+
   const openEditModal = () => {
     setShowEditModal(true);
   };
+
   const handleSaveEdit = () => {
     setShowEditModal(false);
   };
+
   const handleCancelEdit = () => {
     setShowEditModal(false);
   };
+
   const handleSaveSubTicket = () => {
     setShowSubTicketModal(false);
   };
+
   const handleCancelSubTicket = () => {
     setShowSubTicketModal(false);
   };
+
   const generateGUID = () => {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
       const r = Math.random() * 16 | 0;
@@ -979,12 +1017,12 @@ const TicketDetails = ({ route }) => {
   return (
     <KeyboardAvoidingView 
           style={{ flex: 1 }} 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         > 
         <ScrollView
           style={{flex: 1}}
           contentContainerStyle={{}}
-          keyboardShouldPersistTaps="handled"
+          keyboardShouldPersistTaps="always"
         >
           <TouchableWithoutFeedback onPress={closeAllDropdowns}>
             <View style={[styles.container, { flexGrow: 1 }]}>
@@ -1161,7 +1199,11 @@ const TicketDetails = ({ route }) => {
                               <Ionicons name="chatbox-ellipses-outline" size={16} color="#026367" style={styles.dropdownIcon} />
                               <Text style={styles.dropdownText}>Consult</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.dropdownItem} onPress={closeMenu}>
+                            <TouchableOpacity style={styles.dropdownItem} onPress={()=>{
+                              setISTransfer(true);
+                              setIsOpenReply(true);
+                              closeMenu();
+                            }}>
                               <Ionicons name="swap-horizontal-outline" size={16} color="#026367" style={styles.dropdownIcon} />
                               <Text style={styles.dropdownText}>Transfer</Text>
                             </TouchableOpacity>
@@ -1208,7 +1250,37 @@ const TicketDetails = ({ route }) => {
                           />
                         </View>
                     }
-                    <View style={[styles.editorBox, {minHeight: replyType === 'private note' ? 100 : 'unset'}]}>
+                    {
+                      isTransfer &&
+                        <View style={{width: '100%', marginBottom: 10,}}>
+                          <Dropdown
+                            style={styles.dropdown}
+                            placeholderStyle={styles.placeholder}
+                            selectedTextStyle={styles.selectedText}
+                            data={departmentsOptions}
+                            labelField="label"
+                            valueField="value"
+                            placeholder="Select Teams"
+                            search={Array.isArray(departmentsOptions) && departmentsOptions?.length > 0}
+                            searchPlaceholder="Search..."
+                            value={selectedTeams}
+                            onChange={(item) => {
+                              setSelectedTeams(item.value)
+                            }}
+                            renderRightIcon={() => (
+                              <Ionicons name="chevron-down" size={18} color="#333" />
+                            )}
+                            containerStyle={styles.dropdownContainer}
+                            itemTextStyle={styles.dropdownItems}
+                          />
+                          <PeoplePickerMain
+                            fieldName="Consultant"
+                            values={{ Consultant: consultant }}
+                            setFieldValue={handleConsultant}
+                          />
+                        </View>
+                    }
+                    <View style={[styles.editorBox, {minHeight: replyType === 'private note' ? 140 : 'unset'}]}>
                       <View style={styles.replyHeader}>
                         <TouchableOpacity onPress={()=>{setShowReplyCCModal(true)}}>
                           <Ionicons name="person-outline" size={20} color="#352f2fff"/>
@@ -1220,6 +1292,8 @@ const TicketDetails = ({ route }) => {
                         style={styles.richInput}
                         useContainer={true}
                         enterKeyHint="send"
+                        initialFocus={true}
+                        removeExtraSpaces={true}
                         placeholder=""
                         placeholderTextColor="#333333"
                         initialContentHTML={comment}
@@ -1257,6 +1331,7 @@ const TicketDetails = ({ route }) => {
                           setIsOpenReply(false);
                           setReplyType("");
                           setISConsultant(false);
+                          setISTransfer(false);
                         }}>
                           <Ionicons name="close" size={20} color="#352f2fff" />
                           <Text style={styles.discardText}>Discard</Text>
@@ -1795,6 +1870,36 @@ const styles = StyleSheet.create({
     borderColor: '#e2e2e2',
     padding: 10,
     borderBottomWidth: 1,
-  }
+  },
+  dropdown: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    paddingHorizontal: 10,
+    height: 44,
+    backgroundColor: "#fff",
+    marginBottom: 6,
+  },
+  placeholder: {
+    color: "#333333",
+    fontSize: 16,
+    fontFamily: "Roboto",
+  },
+  selectedText: {
+    fontSize: 16,
+    color: "#333333",
+    fontFamily: "Roboto",
+  },
+  dropdownContainer: {
+    backgroundColor: "#fff",
+    padding: 0,
+  },
+  dropdownItems: {
+    color: "#333333",
+    fontFamily: "Roboto",
+    fontSize: 16,
+  },
+  dropdownItemContainer: {
+    padding: 0,
+  },
 });
 
