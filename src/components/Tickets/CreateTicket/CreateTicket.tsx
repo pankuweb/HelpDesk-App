@@ -10,6 +10,9 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
 } from "react-native";
 import { Formik } from "formik";
 import { pick } from "@react-native-documents/picker";
@@ -49,6 +52,7 @@ const CreateTicket = () => {
   const [settings, setSettings] = useState({});
   const [CustomColumns, setCustomColumns] = useState([]);
   const [siteUsersList, setSiteUsersList] = useState([]);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   const navigation = useNavigation();
   const loggedInUser = useSelector((state) => state?.login);
@@ -264,6 +268,18 @@ const CreateTicket = () => {
   }
   useEffect(() => {
     fetchTicketFields();
+    const showSub = Keyboard.addListener('keyboardDidShow', () => {
+        setKeyboardVisible(true);
+      });
+  
+      const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+        setKeyboardVisible(false);
+      });
+  
+      return () => {
+        showSub.remove();
+        hideSub.remove();
+      };
   }, []);
 
   const openGallery = async () => {
@@ -604,592 +620,599 @@ const validateMandatoryFields = (values) => {
   }
   
   return (
-    <View style={{ flex: 1, backgroundColor: "#fff" }}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <Formik
-          initialValues={{
-            title: "",
-            service: "",
-            requestType: requestTypesOptions?.find(option => option.Default === "Yes")?.value || "",
-            priority: "",
-            subServicel1: "",
-            subServicel2: "",
-            subServicel3: "",
-            assetDetails: "",
-            description: "",
-            teams: "",
-            Cc: "",
-            attachments: [],
-            customColData: defaultCustomColData || {},
-          }}
-          onSubmit={handleSubmitForm}
-        >
-          {({ handleChange, handleBlur, handleSubmit, setFieldValue, values, isSubmitting }) => (
-            <>
-              {
-                CustomForms?.length > 1 ? 
-                  <>
-                    <Text style={[styles.label, {textAlign: 'center'}]}>Select Ticket Request Form</Text>
-                    <Dropdown
-                      style={styles.dropdown}
-                      placeholderStyle={styles.placeholder}
-                      selectedTextStyle={styles.selectedText}
-                      data={CustomForms}
-                      labelField="label"
-                      valueField="value"
-                      placeholder="Select Ticket Request Form"
-                      value={requestFormType}
-                      itemContainerStyle={styles.dropdownItemContainer} 
-                      onChange={onChangeCustomForm}
-                      renderRightIcon={() => (
-                        <Ionicons name="chevron-down" size={18} color="#333" />
-                      )}
-                      containerStyle={styles.dropdownContainer}
-                      itemTextStyle={styles.dropdownItem}
-                    />
-                  </> : ''
-              }
-              {
-                FNames?.map((item, index) => {
-                  return item.InternalName == "Title" ? 
-                    <React.Fragment key={index}>
-                      <Text style={styles.label}>Title {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
-                      <TextInput
-                        style={styles.input}
-                        onChangeText={handleChange("title")}
-                        onBlur={handleBlur("title")}
-                        value={values.title}
-                        placeholder="Enter Title"
-                        placeholderTextColor="#333333"
-                      />
-                    </React.Fragment>
-                  : item.InternalName == "Priority" ? 
-                    <React.Fragment key={index}>
-                      <Text style={styles.label}>Priority Type {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
+    <KeyboardAvoidingView 
+      style={{ flex: 1 }} 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <View style={{ flex: 1, backgroundColor: "#fff" }}>
+        <ScrollView contentContainerStyle={styles.container}>
+          <Formik
+            initialValues={{
+              title: "",
+              service: "",
+              requestType: requestTypesOptions?.find(option => option.Default === "Yes")?.value || "",
+              priority: "",
+              subServicel1: "",
+              subServicel2: "",
+              subServicel3: "",
+              assetDetails: "",
+              description: "",
+              teams: "",
+              Cc: "",
+              attachments: [],
+              customColData: defaultCustomColData || {},
+            }}
+            onSubmit={handleSubmitForm}
+          >
+            {({ handleChange, handleBlur, handleSubmit, setFieldValue, values, isSubmitting }) => (
+              <>
+                {
+                  CustomForms?.length > 1 ? 
+                    <>
+                      <Text style={[styles.label, {textAlign: 'center'}]}>Select Ticket Request Form</Text>
                       <Dropdown
                         style={styles.dropdown}
                         placeholderStyle={styles.placeholder}
                         selectedTextStyle={styles.selectedText}
-                        data={priorityOptions}
+                        data={CustomForms}
                         labelField="label"
                         valueField="value"
-                        placeholder="Priority Type"
-                        search={Array.isArray(priorityOptions) && priorityOptions?.length > 0}
-                        searchPlaceholder="Search..."
-                        value={values.priority}
-                        onChange={(item) => setFieldValue("priority", item.value)}
+                        placeholder="Select Ticket Request Form"
+                        value={requestFormType}
+                        itemContainerStyle={styles.dropdownItemContainer} 
+                        onChange={onChangeCustomForm}
                         renderRightIcon={() => (
                           <Ionicons name="chevron-down" size={18} color="#333" />
                         )}
                         containerStyle={styles.dropdownContainer}
                         itemTextStyle={styles.dropdownItem}
                       />
-                    </React.Fragment>
-                  : item.InternalName == "Request Type" ? 
-                    <React.Fragment key={index}>
-                      <Text style={styles.label}>Request Type {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
-                      <Dropdown
-                        style={styles.dropdown}
-                        placeholderStyle={styles.placeholder}
-                        selectedTextStyle={styles.selectedText}
-                        data={requestTypesOptions}
-                        labelField="label"
-                        valueField="value"
-                        placeholder="Request Type"
-                        search={Array.isArray(requestTypesOptions) && requestTypesOptions?.length > 0}
-                        searchPlaceholder="Search..."
-                        value={values.requestType}
-                        onChange={(item) => setFieldValue("requestType", item.value)}
-                        renderRightIcon={() => (
-                          <Ionicons name="chevron-down" size={18} color="#333" />
-                        )}
-                        containerStyle={styles.dropdownContainer}
-                        itemTextStyle={styles.dropdownItem}
-                      />
-                    </React.Fragment>
-                  : item.InternalName == "Services" ? 
-                    <React.Fragment key={index}>
-                      <Text style={styles.label}>Service {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
-                      <Dropdown
-                        style={styles.dropdown}
-                        placeholderStyle={styles.placeholder}
-                        selectedTextStyle={styles.selectedText}
-                        data={serviceOptions}
-                        labelField="label"
-                        valueField="value"
-                        placeholder="Select an option"
-                        search={Array.isArray(serviceOptions) && serviceOptions?.length > 0}
-                        searchPlaceholder="Search..."
-                        value={values.service}
-                        onChange={(item) => {
-                          setSelectedService(item.value)
-                          setFieldValue("service", item.value)
-                        }}
-                        renderRightIcon={() => (
-                          <Ionicons name="chevron-down" size={18} color="#333" />
-                        )}
-                        containerStyle={styles.dropdownContainer}
-                        itemTextStyle={styles.dropdownItem}
-                      />
-                    </React.Fragment>
-                  : item.InternalName == "SubServices" ||
-                    item.InternalName == "Sub Services" ||
-                    item.InternalName == "Sub Services L1" ? 
-                    <React.Fragment key={index}>
-                      <Text style={styles.label}>Sub Service L1 {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
-                      <Dropdown
-                        style={styles.dropdown}
-                        placeholderStyle={styles.placeholder}
-                        selectedTextStyle={styles.selectedText}
-                        data={subServiceOptions}
-                        labelField="label"
-                        valueField="value"
-                        placeholder="Select an option"
-                        search={Array.isArray(subServiceOptions) && subServiceOptions?.length > 0}
-                        searchPlaceholder="Search..."
-                        value={values.subServicel1}
-                        onChange={(item) => {
-                          setSelectedSubService(item.value);
-                          setFieldValue("subServicel1", item.value);
-                        }}
-                        renderRightIcon={() => (
-                          <Ionicons name="chevron-down" size={18} color="#333" />
-                        )}
-                        containerStyle={styles.dropdownContainer}
-                        itemTextStyle={styles.dropdownItem}
-                      />
-                    </React.Fragment>
-                  : item.InternalName == "SubServiceL2" ||
-                  item.InternalName == "Sub Services L2" ? 
-                    <React.Fragment key={index}>
-                      <Text style={styles.label}>Sub Service L2 {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
-                      <Dropdown
-                        style={styles.dropdown}
-                        placeholderStyle={styles.placeholder}
-                        selectedTextStyle={styles.selectedText}
-                        data={subServiceLW2Options}
-                        labelField="label"
-                        valueField="value"
-                        placeholder="Select an option"
-                        search={Array.isArray(subServiceLW2Options) && subServiceLW2Options?.length > 0}
-                        searchPlaceholder="Search..."
-                        value={values.subServicel2}
-                        onChange={(item) => {
-                          setFieldValue("subServicel2", item.value);
-                          setSelectedSubServiceL2(item.value);
-                        }}
-                        renderRightIcon={() => (
-                          <Ionicons name="chevron-down" size={18} color="#333" />
-                        )}
-                        containerStyle={styles.dropdownContainer}
-                        itemTextStyle={styles.dropdownItem}
-                      />
-                    </React.Fragment>
-                  : item.InternalName == "SubServiceL3" ||
-                  item.InternalName == "Sub Services L3" ? 
-                    <React.Fragment key={index}>
-                      <Text style={styles.label}>Sub Service L3 {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
-                      <Dropdown
-                        style={styles.dropdown}
-                        placeholderStyle={styles.placeholder}
-                        selectedTextStyle={styles.selectedText}
-                        data={subServiceLW3Options}
-                        labelField="label"
-                        valueField="value"
-                        placeholder="Select an option"
-                        search={Array.isArray(subServiceLW3Options) && subServiceLW3Options?.length > 0}
-                        searchPlaceholder="Search..."
-                        value={values.subServicel3}
-                        onChange={(item) => setFieldValue("subServicel3", item.value)}
-                        renderRightIcon={() => (
-                          <Ionicons name="chevron-down" size={18} color="#333" />
-                        )}
-                        containerStyle={styles.dropdownContainer}
-                        itemTextStyle={styles.dropdownItem}
-                      />
-                    </React.Fragment>
-                  : item.InternalName == "Asset detail" ? 
-                    <React.Fragment key={index}>
-                      <Text style={styles.label}>Asset Detail {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
-                      <Dropdown
-                        style={styles.dropdown}
-                        placeholderStyle={styles.placeholder}
-                        selectedTextStyle={styles.selectedText}
-                        data={assetsOptions}
-                        labelField="label"
-                        valueField="value"
-                        placeholder="Select Asset"
-                        search={Array.isArray(assetsOptions) && assetsOptions?.length > 0}
-                        searchPlaceholder="Search..."
-                        value={values.assetDetails}
-                        onChange={(item) => setFieldValue("assetDetails", item.value)}
-                        renderRightIcon={() => (
-                          <Ionicons name="chevron-down" size={18} color="#333" />
-                        )}
-                        containerStyle={styles.dropdownContainer}
-                        itemTextStyle={styles.dropdownItem}
-                      />
-                    </React.Fragment>
-                  : item.InternalName == "Requester" ? 
-                    <React.Fragment key={index}>
-                      <Text style={styles.label}>Requester {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
-                      <PeoplePicker
-                        fieldName="Requester"
-                        values={values}
-                        setFieldValue={setFieldValue}
-                        styles={styles}
-                      />
-                    </React.Fragment>
-                  : item.InternalName == "Teams" ? 
-                    <React.Fragment key={index}>
-                      <Text style={styles.label}>Teams {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
-                      <Dropdown
-                        style={styles.dropdown}
-                        placeholderStyle={styles.placeholder}
-                        selectedTextStyle={styles.selectedText}
-                        data={departmentsOptions}
-                        labelField="label"
-                        valueField="value"
-                        placeholder="Select Team"
-                        search={Array.isArray(departmentsOptions) && departmentsOptions?.length > 0}
-                        searchPlaceholder="Search..."
-                        value={values.teams}
-                        onChange={(item) => {
-                          setSelectedTeam(item.value)
-                          setFieldValue("teams", item.value)
-                        }}
-                        renderRightIcon={() => (
-                          <Ionicons name="chevron-down" size={18} color="#333" />
-                        )}
-                        containerStyle={styles.dropdownContainer}
-                        itemTextStyle={styles.dropdownItem}
-                      />
-                    </React.Fragment>
-                  : item.InternalName == "Cc" ? 
-                    <React.Fragment key={index}>
-                      <Text style={styles.label}>Cc {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
-                      <PeoplePicker
-                        fieldName="Cc"
-                        values={values}
-                        setFieldValue={setFieldValue}
-                        styles={styles}
-                      />
-                    </React.Fragment>
-                  : item.InternalName == "Ticket Description" ? 
-                    <React.Fragment key={index}>
-                      <Text style={styles.label}>Description {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
-                      <RichEditor
-                        ref={richText}
-                        style={styles.richInput}
-                        placeholder="Enter ticket description..."
-                        placeholderTextColor="#333333"
-                        initialContentHTML={values.description}
-                        onChange={(text) => setFieldValue("description", text)}
-                        editorStyle={{
-                          backgroundColor: "#fff",
-                          color: "#333333",
-                          placeholderColor: "#333333",
-                          cssText: "body {font-family: Roboto; font-size: 16px;}",
-                        }}
-                      />
-                      <View style={{ marginBottom: 6 }}>
-                        <RichToolbar
-                          editor={richText}
-                          actions={[
-                            actions.setBold,
-                            actions.setItalic,
-                            actions.setUnderline,
-                            actions.insertOrderedList,
-                            actions.insertBulletsList,
-                            actions.heading1,
-                            actions.heading2,
-                            actions.heading3,
-                            actions.setParagraph,
-                            actions.insertLink,
-                            actions.insertImage,
-                            actions.undo,
-                            actions.redo,
-                          ]}
-                          onPressAddImage={insertImage}
-                          iconMap={{
-                            [actions.heading1]: ({ tintColor }) => (
-                              <Text style={{ color: "#333333", fontWeight: "600", fontSize: 18 }}>H1</Text>
-                            ),
-                            [actions.heading2]: ({ tintColor }) => (
-                              <Text style={{ color: "#333333", fontWeight: "600", fontSize: 18 }}>H2</Text>
-                            ),
-                            [actions.heading3]: ({ tintColor }) => (
-                              <Text style={{ color: "#333333", fontWeight: "600", fontSize: 18 }}>H3</Text>
-                            ),
-                            [actions.setParagraph]: ({ tintColor }) => (
-                              <Text style={{ color: "#333333", fontWeight: "600", fontSize: 18 }}>P</Text>
-                            ),
-                            [actions.insertCode]: ({ tintColor }) => (
-                              <Text style={{ color: "#333333", fontWeight: "600", fontSize: 18 }}>{`</>`}</Text>
-                            ),
-                          }}
-                          iconTint="#000"
+                    </> : ''
+                }
+                {
+                  FNames?.map((item, index) => {
+                    return item.InternalName == "Title" ? 
+                      <React.Fragment key={index}>
+                        <Text style={styles.label}>Title {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
+                        <TextInput
+                          style={styles.input}
+                          onChangeText={handleChange("title")}
+                          onBlur={handleBlur("title")}
+                          value={values.title}
+                          placeholder="Enter Title"
+                          placeholderTextColor="#333333"
                         />
-                      </View>
-                    </React.Fragment> 
-                  : item.Type == "Text" ? 
-                    <React.Fragment key={index}>
-                      <Text style={styles.label}>{item?.DisplayName} {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
-                      <TextInput
-                        style={styles.input}
-                        onChangeText={(text) =>
-                          setFieldValue(`customColData.${item?.InternalName}`, text)
-                        }
-                        onBlur={() =>
-                          handleBlur(`customColData.${item?.InternalName}`)
-                        }
-                        value={values?.customColData?.[item?.InternalName] || ""}
-                        placeholder=""
-                        placeholderTextColor="#333333"
-                      />
-                    </React.Fragment>
-                  : item.Type == "Note" ? 
-                    <React.Fragment key={index}>
-                      <Text style={styles.label}>{item?.DisplayName} {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
-                      <TextInput
-                        style={styles.input}
-                        onChangeText={(text) =>
-                          setFieldValue(`customColData.${item?.InternalName}`, text)
-                        }
-                        onBlur={() =>
-                          handleBlur(`customColData.${item?.InternalName}`)
-                        }
-                        value={values?.customColData?.[item?.InternalName] || ""}
-                        placeholder="Enter Title"
-                        placeholderTextColor="#333333"
-                      />
-                    </React.Fragment>
-                  : item.Type == "Number" ? 
-                    <React.Fragment key={index}>
-                      <Text style={styles.label}>{item?.DisplayName} {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
-                      <TextInput
-                        style={styles.input}
-                        onChangeText={(text) =>
-                          setFieldValue(`customColData.${item?.InternalName}`, text)
-                        }
-                        keyboardType="numeric"
-                        onBlur={() =>
-                          handleBlur(`customColData.${item?.InternalName}`)
-                        }
-                        value={values?.customColData?.[item?.InternalName] || ""}
-                        placeholder="Enter Title"
-                        placeholderTextColor="#333333"
-                      />
-                    </React.Fragment>
-                  : item.Type == "DateTime" ? 
-                    <React.Fragment key={index}>
-                      <Text style={styles.label}>{item?.DisplayName} {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
-
-                      <TouchableOpacity
-                        style={styles.input}
-                        onPress={() => setShowPicker(true)}
-                      >
-                        <Text
-                          style={{
-                            color: values?.customColData?.[item?.InternalName] ? '#000' : '#999',
+                      </React.Fragment>
+                    : item.InternalName == "Priority" ? 
+                      <React.Fragment key={index}>
+                        <Text style={styles.label}>Priority Type {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
+                        <Dropdown
+                          style={styles.dropdown}
+                          placeholderStyle={styles.placeholder}
+                          selectedTextStyle={styles.selectedText}
+                          data={priorityOptions}
+                          labelField="label"
+                          valueField="value"
+                          placeholder="Priority Type"
+                          search={Array.isArray(priorityOptions) && priorityOptions?.length > 0}
+                          searchPlaceholder="Search..."
+                          value={values.priority}
+                          onChange={(item) => setFieldValue("priority", item.value)}
+                          renderRightIcon={() => (
+                            <Ionicons name="chevron-down" size={18} color="#333" />
+                          )}
+                          containerStyle={styles.dropdownContainer}
+                          itemTextStyle={styles.dropdownItem}
+                        />
+                      </React.Fragment>
+                    : item.InternalName == "Request Type" ? 
+                      <React.Fragment key={index}>
+                        <Text style={styles.label}>Request Type {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
+                        <Dropdown
+                          style={styles.dropdown}
+                          placeholderStyle={styles.placeholder}
+                          selectedTextStyle={styles.selectedText}
+                          data={requestTypesOptions}
+                          labelField="label"
+                          valueField="value"
+                          placeholder="Request Type"
+                          search={Array.isArray(requestTypesOptions) && requestTypesOptions?.length > 0}
+                          searchPlaceholder="Search..."
+                          value={values.requestType}
+                          onChange={(item) => setFieldValue("requestType", item.value)}
+                          renderRightIcon={() => (
+                            <Ionicons name="chevron-down" size={18} color="#333" />
+                          )}
+                          containerStyle={styles.dropdownContainer}
+                          itemTextStyle={styles.dropdownItem}
+                        />
+                      </React.Fragment>
+                    : item.InternalName == "Services" ? 
+                      <React.Fragment key={index}>
+                        <Text style={styles.label}>Service {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
+                        <Dropdown
+                          style={styles.dropdown}
+                          placeholderStyle={styles.placeholder}
+                          selectedTextStyle={styles.selectedText}
+                          data={serviceOptions}
+                          labelField="label"
+                          valueField="value"
+                          placeholder="Select an option"
+                          search={Array.isArray(serviceOptions) && serviceOptions?.length > 0}
+                          searchPlaceholder="Search..."
+                          value={values.service}
+                          onChange={(item) => {
+                            setSelectedService(item.value)
+                            setFieldValue("service", item.value)
                           }}
-                        >
-                          {values?.customColData?.[item?.InternalName]
-                            ? new Date(values.customColData[item.InternalName]).toDateString()
-                            : ""}
-                        </Text>
-                      </TouchableOpacity>
-
-                      {showPicker && (
-                        <DateTimePicker
-                          value={
-                            values?.customColData?.[item?.InternalName]
-                              ? new Date(values.customColData[item.InternalName])
-                              : new Date()
+                          renderRightIcon={() => (
+                            <Ionicons name="chevron-down" size={18} color="#333" />
+                          )}
+                          containerStyle={styles.dropdownContainer}
+                          itemTextStyle={styles.dropdownItem}
+                        />
+                      </React.Fragment>
+                    : item.InternalName == "SubServices" ||
+                      item.InternalName == "Sub Services" ||
+                      item.InternalName == "Sub Services L1" ? 
+                      <React.Fragment key={index}>
+                        <Text style={styles.label}>Sub Service L1 {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
+                        <Dropdown
+                          style={styles.dropdown}
+                          placeholderStyle={styles.placeholder}
+                          selectedTextStyle={styles.selectedText}
+                          data={subServiceOptions}
+                          labelField="label"
+                          valueField="value"
+                          placeholder="Select an option"
+                          search={Array.isArray(subServiceOptions) && subServiceOptions?.length > 0}
+                          searchPlaceholder="Search..."
+                          value={values.subServicel1}
+                          onChange={(item) => {
+                            setSelectedSubService(item.value);
+                            setFieldValue("subServicel1", item.value);
+                          }}
+                          renderRightIcon={() => (
+                            <Ionicons name="chevron-down" size={18} color="#333" />
+                          )}
+                          containerStyle={styles.dropdownContainer}
+                          itemTextStyle={styles.dropdownItem}
+                        />
+                      </React.Fragment>
+                    : item.InternalName == "SubServiceL2" ||
+                    item.InternalName == "Sub Services L2" ? 
+                      <React.Fragment key={index}>
+                        <Text style={styles.label}>Sub Service L2 {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
+                        <Dropdown
+                          style={styles.dropdown}
+                          placeholderStyle={styles.placeholder}
+                          selectedTextStyle={styles.selectedText}
+                          data={subServiceLW2Options}
+                          labelField="label"
+                          valueField="value"
+                          placeholder="Select an option"
+                          search={Array.isArray(subServiceLW2Options) && subServiceLW2Options?.length > 0}
+                          searchPlaceholder="Search..."
+                          value={values.subServicel2}
+                          onChange={(item) => {
+                            setFieldValue("subServicel2", item.value);
+                            setSelectedSubServiceL2(item.value);
+                          }}
+                          renderRightIcon={() => (
+                            <Ionicons name="chevron-down" size={18} color="#333" />
+                          )}
+                          containerStyle={styles.dropdownContainer}
+                          itemTextStyle={styles.dropdownItem}
+                        />
+                      </React.Fragment>
+                    : item.InternalName == "SubServiceL3" ||
+                    item.InternalName == "Sub Services L3" ? 
+                      <React.Fragment key={index}>
+                        <Text style={styles.label}>Sub Service L3 {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
+                        <Dropdown
+                          style={styles.dropdown}
+                          placeholderStyle={styles.placeholder}
+                          selectedTextStyle={styles.selectedText}
+                          data={subServiceLW3Options}
+                          labelField="label"
+                          valueField="value"
+                          placeholder="Select an option"
+                          search={Array.isArray(subServiceLW3Options) && subServiceLW3Options?.length > 0}
+                          searchPlaceholder="Search..."
+                          value={values.subServicel3}
+                          onChange={(item) => setFieldValue("subServicel3", item.value)}
+                          renderRightIcon={() => (
+                            <Ionicons name="chevron-down" size={18} color="#333" />
+                          )}
+                          containerStyle={styles.dropdownContainer}
+                          itemTextStyle={styles.dropdownItem}
+                        />
+                      </React.Fragment>
+                    : item.InternalName == "Asset detail" ? 
+                      <React.Fragment key={index}>
+                        <Text style={styles.label}>Asset Detail {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
+                        <Dropdown
+                          style={styles.dropdown}
+                          placeholderStyle={styles.placeholder}
+                          selectedTextStyle={styles.selectedText}
+                          data={assetsOptions}
+                          labelField="label"
+                          valueField="value"
+                          placeholder="Select Asset"
+                          search={Array.isArray(assetsOptions) && assetsOptions?.length > 0}
+                          searchPlaceholder="Search..."
+                          value={values.assetDetails}
+                          onChange={(item) => setFieldValue("assetDetails", item.value)}
+                          renderRightIcon={() => (
+                            <Ionicons name="chevron-down" size={18} color="#333" />
+                          )}
+                          containerStyle={styles.dropdownContainer}
+                          itemTextStyle={styles.dropdownItem}
+                        />
+                      </React.Fragment>
+                    : item.InternalName == "Requester" ? 
+                      <React.Fragment key={index}>
+                        <Text style={styles.label}>Requester {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
+                        <PeoplePicker
+                          fieldName="Requester"
+                          values={values}
+                          setFieldValue={setFieldValue}
+                          styles={styles}
+                        />
+                      </React.Fragment>
+                    : item.InternalName == "Teams" ? 
+                      <React.Fragment key={index}>
+                        <Text style={styles.label}>Teams {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
+                        <Dropdown
+                          style={styles.dropdown}
+                          placeholderStyle={styles.placeholder}
+                          selectedTextStyle={styles.selectedText}
+                          data={departmentsOptions}
+                          labelField="label"
+                          valueField="value"
+                          placeholder="Select Team"
+                          search={Array.isArray(departmentsOptions) && departmentsOptions?.length > 0}
+                          searchPlaceholder="Search..."
+                          value={values.teams}
+                          onChange={(item) => {
+                            setSelectedTeam(item.value)
+                            setFieldValue("teams", item.value)
+                          }}
+                          renderRightIcon={() => (
+                            <Ionicons name="chevron-down" size={18} color="#333" />
+                          )}
+                          containerStyle={styles.dropdownContainer}
+                          itemTextStyle={styles.dropdownItem}
+                        />
+                      </React.Fragment>
+                    : item.InternalName == "Cc" ? 
+                      <React.Fragment key={index}>
+                        <Text style={styles.label}>Cc {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
+                        <PeoplePicker
+                          fieldName="Cc"
+                          values={values}
+                          setFieldValue={setFieldValue}
+                          styles={styles}
+                        />
+                      </React.Fragment>
+                    : item.InternalName == "Ticket Description" ? 
+                      <React.Fragment key={index}>
+                        <Text style={styles.label}>Description {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
+                        <RichEditor
+                          ref={richText}
+                          style={styles.richInput}
+                          placeholder="Enter ticket description..."
+                          placeholderTextColor="#333333"
+                          initialContentHTML={values.description}
+                          onChange={(text) => setFieldValue("description", text)}
+                          editorStyle={{
+                            backgroundColor: "#fff",
+                            color: "#333333",
+                            placeholderColor: "#333333",
+                            cssText: "body {font-family: Roboto; font-size: 16px;}",
+                          }}
+                        />
+                        <View style={{ marginBottom: 6 }}>
+                          <RichToolbar
+                            editor={richText}
+                            actions={[
+                              actions.setBold,
+                              actions.setItalic,
+                              actions.setUnderline,
+                              actions.insertOrderedList,
+                              actions.insertBulletsList,
+                              actions.heading1,
+                              actions.heading2,
+                              actions.heading3,
+                              actions.setParagraph,
+                              actions.insertLink,
+                              actions.insertImage,
+                              actions.undo,
+                              actions.redo,
+                            ]}
+                            onPressAddImage={insertImage}
+                            iconMap={{
+                              [actions.heading1]: ({ tintColor }) => (
+                                <Text style={{ color: "#333333", fontWeight: "600", fontSize: 18 }}>H1</Text>
+                              ),
+                              [actions.heading2]: ({ tintColor }) => (
+                                <Text style={{ color: "#333333", fontWeight: "600", fontSize: 18 }}>H2</Text>
+                              ),
+                              [actions.heading3]: ({ tintColor }) => (
+                                <Text style={{ color: "#333333", fontWeight: "600", fontSize: 18 }}>H3</Text>
+                              ),
+                              [actions.setParagraph]: ({ tintColor }) => (
+                                <Text style={{ color: "#333333", fontWeight: "600", fontSize: 18 }}>P</Text>
+                              ),
+                              [actions.insertCode]: ({ tintColor }) => (
+                                <Text style={{ color: "#333333", fontWeight: "600", fontSize: 18 }}>{`</>`}</Text>
+                              ),
+                            }}
+                            iconTint="#000"
+                          />
+                        </View>
+                      </React.Fragment> 
+                    : item.Type == "Text" ? 
+                      <React.Fragment key={index}>
+                        <Text style={styles.label}>{item?.DisplayName} {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
+                        <TextInput
+                          style={styles.input}
+                          onChangeText={(text) =>
+                            setFieldValue(`customColData.${item?.InternalName}`, text)
                           }
-                          mode="date"
-                          display="default"
-                          onChange={(event, selectedDate) => {
-                            setShowPicker(false);
-                            if (selectedDate) {
-                              setFieldValue(
-                                `customColData.${item?.InternalName}`,
-                                selectedDate.toISOString()
-                              );
+                          onBlur={() =>
+                            handleBlur(`customColData.${item?.InternalName}`)
+                          }
+                          value={values?.customColData?.[item?.InternalName] || ""}
+                          placeholder=""
+                          placeholderTextColor="#333333"
+                        />
+                      </React.Fragment>
+                    : item.Type == "Note" ? 
+                      <React.Fragment key={index}>
+                        <Text style={styles.label}>{item?.DisplayName} {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
+                        <TextInput
+                          style={styles.input}
+                          onChangeText={(text) =>
+                            setFieldValue(`customColData.${item?.InternalName}`, text)
+                          }
+                          onBlur={() =>
+                            handleBlur(`customColData.${item?.InternalName}`)
+                          }
+                          value={values?.customColData?.[item?.InternalName] || ""}
+                          placeholder="Enter Title"
+                          placeholderTextColor="#333333"
+                        />
+                      </React.Fragment>
+                    : item.Type == "Number" ? 
+                      <React.Fragment key={index}>
+                        <Text style={styles.label}>{item?.DisplayName} {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
+                        <TextInput
+                          style={styles.input}
+                          onChangeText={(text) =>
+                            setFieldValue(`customColData.${item?.InternalName}`, text)
+                          }
+                          keyboardType="numeric"
+                          onBlur={() =>
+                            handleBlur(`customColData.${item?.InternalName}`)
+                          }
+                          value={values?.customColData?.[item?.InternalName] || ""}
+                          placeholder="Enter Title"
+                          placeholderTextColor="#333333"
+                        />
+                      </React.Fragment>
+                    : item.Type == "DateTime" ? 
+                      <React.Fragment key={index}>
+                        <Text style={styles.label}>{item?.DisplayName} {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
+
+                        <TouchableOpacity
+                          style={styles.input}
+                          onPress={() => setShowPicker(true)}
+                        >
+                          <Text
+                            style={{
+                              color: values?.customColData?.[item?.InternalName] ? '#000' : '#999',
+                            }}
+                          >
+                            {values?.customColData?.[item?.InternalName]
+                              ? new Date(values.customColData[item.InternalName]).toDateString()
+                              : ""}
+                          </Text>
+                        </TouchableOpacity>
+
+                        {showPicker && (
+                          <DateTimePicker
+                            value={
+                              values?.customColData?.[item?.InternalName]
+                                ? new Date(values.customColData[item.InternalName])
+                                : new Date()
                             }
+                            mode="date"
+                            display="default"
+                            onChange={(event, selectedDate) => {
+                              setShowPicker(false);
+                              if (selectedDate) {
+                                setFieldValue(
+                                  `customColData.${item?.InternalName}`,
+                                  selectedDate.toISOString()
+                                );
+                              }
+                            }}
+                          />
+                        )}
+                      </React.Fragment>
+                    : item.Type == "Choice" ? 
+                      <React.Fragment key={index}>
+                        <Text style={styles.label}>{item?.DisplayName} {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
+                        <Dropdown
+                          style={styles.dropdown}
+                          placeholderStyle={styles.placeholder}
+                          selectedTextStyle={styles.selectedText}
+                          data={item?.ColumnValues}
+                          labelField="label"
+                          valueField="value"
+                          search={Array.isArray(item?.ColumnValues) && item?.ColumnValues?.length > 0}
+                          searchPlaceholder="Search..."
+                          placeholder="Select Option"
+                          value={values?.customColData?.[item?.InternalName] || item?.ColumnValues?.filter(i=> i.selected === true)?.[0]}
+                          onChange={(selected) => {
+                            setFieldValue(`customColData.${item?.InternalName}`, selected.value);
+                          }}
+                          renderRightIcon={() => (
+                            <Ionicons name="chevron-down" size={18} color="#333" />
+                          )}
+                          containerStyle={styles.dropdownContainer}
+                          itemTextStyle={styles.dropdownItem}
+                        />
+                      </React.Fragment>
+                    : item.Type == "MultipleChoice" ? 
+                      <React.Fragment key={index}>
+                        <Text style={styles.label}>{item?.DisplayName} {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
+                        <MultiSelect
+                          style={styles.dropdown}
+                          placeholderStyle={styles.placeholder}
+                          selectedTextStyle={styles.selectedText}
+                          data={item.ColumnValues}
+                          confirmSelectItem
+                          labelField="label"
+                          valueField="value"
+                          placeholder="Select Options"
+                          search={Array.isArray(item?.ColumnValues) && item?.ColumnValues?.length > 0}
+                          searchPlaceholder="Search..."
+                          value={
+                            values?.customColData?.[item?.InternalName] ||
+                            item?.ColumnValues?.filter(i => i.selected)?.map(i => i.value)
+                          }
+                          onChange={selectedValues => {
+                            setFieldValue(`customColData.${item?.InternalName}`, selectedValues);
+                          }}
+                          renderRightIcon={() => (
+                            <Ionicons name="chevron-down" size={18} color="#333" />
+                          )}
+                          containerStyle={styles.dropdownContainer}
+                          itemTextStyle={styles.dropdownItem}
+                          renderSelectedItem={(item, unSelect) => (
+                            <View style={styles.selectedItem}>
+                              <Text style={styles.selectedTextMulti}>{item.label}</Text>
+                              <TouchableOpacity onPress={() => unSelect && unSelect(item)}>
+                                <Ionicons name="close-circle" size={18} color="#555" />
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                        />
+                      </React.Fragment>
+                    : item.Type == "User" ? 
+                      <React.Fragment key={index}>
+                        <Text style={styles.label}>{item?.DisplayName} {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
+                        <MultiSelect
+                          style={styles.dropdown}
+                          placeholderStyle={styles.placeholder}
+                          selectedTextStyle={styles.selectedText}
+                          data={UsersOption}
+                          labelField="label"
+                          valueField="value"
+                          placeholder="Select Options"
+                          value={
+                            values?.customColData?.[item?.InternalName] || []
+                          }
+                          onChange={selectedValues => {
+                            setFieldValue(`customColData.${item?.InternalName}`, selectedValues);
+                          }}
+                          renderRightIcon={() => (
+                            <Ionicons name="chevron-down" size={18} color="#333" />
+                          )}
+                          containerStyle={styles.dropdownContainer}
+                          itemTextStyle={styles.dropdownItem}
+                          search={Array.isArray(UsersOption) && UsersOption?.length > 0}
+                          searchPlaceholder="Search..."
+                          renderSelectedItem={(item, unSelect) => (
+                            <View style={styles.selectedItem}>
+                              <Text style={styles.selectedTextMulti}>{item.label}</Text>
+                              <TouchableOpacity onPress={() => unSelect && unSelect(item)}>
+                                <Ionicons name="close-circle" size={18} color="#555" />
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                          renderItem={option => {
+                            const name = option?.Users?.Title;
+                            const mail = option?.Users?.EMail;
+
+                            if (!name || !mail) return null;
+
+                            return (
+                              <PeoplePickerOption
+                                  name={name}
+                                  mail={mail}
+                                />
+                            );
                           }}
                         />
-                      )}
-                    </React.Fragment>
-                  : item.Type == "Choice" ? 
-                    <React.Fragment key={index}>
-                      <Text style={styles.label}>{item?.DisplayName} {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
-                      <Dropdown
-                        style={styles.dropdown}
-                        placeholderStyle={styles.placeholder}
-                        selectedTextStyle={styles.selectedText}
-                        data={item?.ColumnValues}
-                        labelField="label"
-                        valueField="value"
-                        search={Array.isArray(item?.ColumnValues) && item?.ColumnValues?.length > 0}
-                        searchPlaceholder="Search..."
-                        placeholder="Select Option"
-                        value={values?.customColData?.[item?.InternalName] || item?.ColumnValues?.filter(i=> i.selected === true)?.[0]}
-                        onChange={(selected) => {
-                          setFieldValue(`customColData.${item?.InternalName}`, selected.value);
-                        }}
-                        renderRightIcon={() => (
-                          <Ionicons name="chevron-down" size={18} color="#333" />
+                      </React.Fragment>
+                    : ""
+                  })
+                }
+                <View style={{marginBottom: keyboardVisible ? 80 : 0}}>
+                    <View style={styles.submissionWrapper}>
+                      <TouchableOpacity 
+                        style={[
+                          styles.submitBtn, 
+                          isSubmitting && { backgroundColor: '#308285ff' }
+                        ]} 
+                        onPress={handleSubmit}
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <Text style={styles.submitBtnText}>Create Ticket</Text>
                         )}
-                        containerStyle={styles.dropdownContainer}
-                        itemTextStyle={styles.dropdownItem}
-                      />
-                    </React.Fragment>
-                  : item.Type == "MultipleChoice" ? 
-                    <React.Fragment key={index}>
-                      <Text style={styles.label}>{item?.DisplayName} {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
-                      <MultiSelect
-                        style={styles.dropdown}
-                        placeholderStyle={styles.placeholder}
-                        selectedTextStyle={styles.selectedText}
-                        data={item.ColumnValues}
-                        confirmSelectItem
-                        labelField="label"
-                        valueField="value"
-                        placeholder="Select Options"
-                        search={Array.isArray(item?.ColumnValues) && item?.ColumnValues?.length > 0}
-                        searchPlaceholder="Search..."
-                        value={
-                          values?.customColData?.[item?.InternalName] ||
-                          item?.ColumnValues?.filter(i => i.selected)?.map(i => i.value)
-                        }
-                        onChange={selectedValues => {
-                          setFieldValue(`customColData.${item?.InternalName}`, selectedValues);
-                        }}
-                        renderRightIcon={() => (
-                          <Ionicons name="chevron-down" size={18} color="#333" />
-                        )}
-                        containerStyle={styles.dropdownContainer}
-                        itemTextStyle={styles.dropdownItem}
-                        renderSelectedItem={(item, unSelect) => (
-                          <View style={styles.selectedItem}>
-                            <Text style={styles.selectedTextMulti}>{item.label}</Text>
-                            <TouchableOpacity onPress={() => unSelect && unSelect(item)}>
-                              <Ionicons name="close-circle" size={18} color="#555" />
-                            </TouchableOpacity>
-                          </View>
-                        )}
-                      />
-                    </React.Fragment>
-                  : item.Type == "User" ? 
-                    <React.Fragment key={index}>
-                      <Text style={styles.label}>{item?.DisplayName} {item?.MandCheck === true && <Text style={styles.requredStar}>*</Text>}</Text>
-                      <MultiSelect
-                        style={styles.dropdown}
-                        placeholderStyle={styles.placeholder}
-                        selectedTextStyle={styles.selectedText}
-                        data={UsersOption}
-                        labelField="label"
-                        valueField="value"
-                        placeholder="Select Options"
-                        value={
-                          values?.customColData?.[item?.InternalName] || []
-                        }
-                        onChange={selectedValues => {
-                          setFieldValue(`customColData.${item?.InternalName}`, selectedValues);
-                        }}
-                        renderRightIcon={() => (
-                          <Ionicons name="chevron-down" size={18} color="#333" />
-                        )}
-                        containerStyle={styles.dropdownContainer}
-                        itemTextStyle={styles.dropdownItem}
-                        search={Array.isArray(UsersOption) && UsersOption?.length > 0}
-                        searchPlaceholder="Search..."
-                        renderSelectedItem={(item, unSelect) => (
-                          <View style={styles.selectedItem}>
-                            <Text style={styles.selectedTextMulti}>{item.label}</Text>
-                            <TouchableOpacity onPress={() => unSelect && unSelect(item)}>
-                              <Ionicons name="close-circle" size={18} color="#555" />
-                            </TouchableOpacity>
-                          </View>
-                        )}
-                        renderItem={option => {
-                          const name = option?.Users?.Title;
-                          const mail = option?.Users?.EMail;
-
-                          if (!name || !mail) return null;
-
-                          return (
-                            <PeoplePickerOption
-                                name={name}
-                                mail={mail}
-                              />
-                          );
-                        }}
-                      />
-                    </React.Fragment>
-                  : ""
-                })
-              }
-              <View style={styles.submissionWrapper}>
-                <TouchableOpacity 
-                  style={[
-                    styles.submitBtn, 
-                    isSubmitting && { backgroundColor: '#308285ff' }
-                  ]} 
-                  onPress={handleSubmit}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Text style={styles.submitBtnText}>Create Ticket</Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.attachmentBtn}
-                  onPress={async () => {
-                    try {
-                      const result = await pick({
-                        allowMultiSelection: true,
-                        type: ["image/*"],
-                      });
-                      if (result && result.length > 0) {
-                        setFieldValue("attachments", [...values.attachments, ...result]);
-                      }
-                    } catch (err) {
-                      Alert.alert("File Error", err.message);
-                    }
-                  }}
-                >
-                  <Ionicons name="attach" size={26} color="#026367" style={{ marginLeft: 8 }} />
-                </TouchableOpacity>
-              </View>
-
-              {values.attachments.length > 0 && (
-                <View style={[styles.attachmentsContainer, { marginBottom: 50 }]}>
-                  {values.attachments.map((item, index) => (
-                    <View key={index} style={styles.attachmentItem}>
-                      <Text style={styles.attachmentName} numberOfLines={1}>
-                        {item.name}
-                      </Text>
+                      </TouchableOpacity>
                       <TouchableOpacity
-                        onPress={() => {
-                          const updated = values?.attachments?.filter((_, i) => i !== index);
-                          setFieldValue("attachments", updated);
+                        style={styles.attachmentBtn}
+                        onPress={async () => {
+                          try {
+                            const result = await pick({
+                              allowMultiSelection: true,
+                              type: ["image/*"],
+                            });
+                            if (result && result.length > 0) {
+                              setFieldValue("attachments", [...values.attachments, ...result]);
+                            }
+                          } catch (err) {
+                            Alert.alert("File Error", err.message);
+                          }
                         }}
                       >
-                        <Ionicons name="close" size={21} color="#026367" />
+                        <Ionicons name="attach" size={26} color="#026367" style={{ marginLeft: 8 }} />
                       </TouchableOpacity>
                     </View>
-                  ))}
+
+                    {values.attachments.length > 0 && (
+                      <View style={[styles.attachmentsContainer, { marginBottom: 50 }]}>
+                        {values.attachments.map((item, index) => (
+                          <View key={index} style={styles.attachmentItem}>
+                            <Text style={styles.attachmentName} numberOfLines={1}>
+                              {item.name}
+                            </Text>
+                            <TouchableOpacity
+                              onPress={() => {
+                                const updated = values?.attachments?.filter((_, i) => i !== index);
+                                setFieldValue("attachments", updated);
+                              }}
+                            >
+                              <Ionicons name="close" size={21} color="#026367" />
+                            </TouchableOpacity>
+                          </View>
+                        ))}
+                      </View>
+                    )}
                 </View>
-              )}
-            </>
-          )}
-        </Formik>
-      </ScrollView>
-    </View>
+              </>
+            )}
+          </Formik>
+        </ScrollView>
+      </View>
+    </KeyboardAvoidingView>
   );
 };
 

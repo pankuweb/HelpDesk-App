@@ -13,7 +13,8 @@ import {
   TextInput,
   Platform,
   SafeAreaView,
-  KeyboardAvoidingView
+  KeyboardAvoidingView,
+  Keyboard
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -110,6 +111,7 @@ const TicketDetails = ({ route }) => {
   }]);
   const [SLAResponseInfoData, setSLAResponseInfoData] = useState(isStringValidated(ticketData?.SLAResponseInfo) ? JSON.parse(ticketData?.SLAResponseInfo) : []);
   const [SLAResponseDone, setSLAResponseDone] = useState(isStringValidated(ticketData?.SLAResponseDone) ? ticketData?.SLAResponseDone : '',);
+   const [keyboardVisible, setKeyboardVisible] = useState(false);
  
   const richTextRef = useRef(null);
   const descriptionRef = useRef(null);
@@ -231,6 +233,18 @@ const TicketDetails = ({ route }) => {
       console.log("Attachments:", CommentsForReply);
     };
     loadAttachments();
+    const showSub = Keyboard.addListener('keyboardDidShow', () => {
+        setKeyboardVisible(true);
+      });
+  
+      const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+        setKeyboardVisible(false);
+      });
+  
+      return () => {
+        showSub.remove();
+        hideSub.remove();
+      };
   }, []);
   
   useEffect(() => {
@@ -963,9 +977,10 @@ const TicketDetails = ({ route }) => {
   }
   
   return (
-    <>
-    <View style={{ flex: 1 }}>
-     
+    <KeyboardAvoidingView 
+          style={{ flex: 1 }} 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        > 
         <ScrollView
           style={{flex: 1}}
           contentContainerStyle={{}}
@@ -1236,7 +1251,7 @@ const TicketDetails = ({ route }) => {
                         ))}
                       </View>
                     )}
-                    <View style={[styles.row, {marginTop: 16,marginBottom: 24,}]}>
+                    <View style={[styles.row, {marginTop: 16,marginBottom: keyboardVisible ? 122 : 24}]}>
                       <View>
                         <TouchableOpacity style={styles.discardButton} onPress={()=> {
                           setIsOpenReply(false);
@@ -1391,8 +1406,7 @@ const TicketDetails = ({ route }) => {
             </View>
           </NotificationProvider>
         </Modal>
-    </View>
-    </>
+    </KeyboardAvoidingView>
   );
 };
 export default TicketDetails;
