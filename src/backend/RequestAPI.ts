@@ -693,7 +693,7 @@ export async function fetchHR365HDMDepartments() {
     const baseURL: any = state?.login?.tanent;
     const userID: any = state?.login?.user?.UsersId;
 
-    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMDepartments')/items?$select=*,Supervisor1/Title,Supervisor1/Id&$filter=EscalationTeam%20eq%20%27No%27&$expand=Supervisor1`;
+    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMDepartments')/items`;
 
     const res = await axios.get(apiUrl, {
       headers: {

@@ -66,9 +66,12 @@ const TicketDetails = ({ route }) => {
   let FormattedDataForLink = [];
   const ticketProp = ticketData?.TicketProperties;
   const DeptCode = JSON.parse(ticketProp)?.[0]?.DepartmentCode;
+  const DeptName = ticketData?.DepartmentName;
+  
   const ticketID = ticketData?.ID;
   const ticketSQNo = ticketData?.TicketSeqnumber;
   const ReqEmail = ticketData?.RequesterEmail;
+  const ReqName = ticketData?.RequesterName;
   const ticketAssignedToMail = ticketData?.AssignedTomail;
   const ticketAction = ticketData?.ActionOnTicket;
   const ticketTitle = ticketData?.Title;
@@ -83,9 +86,7 @@ const TicketDetails = ({ route }) => {
   
   const navigation = useNavigation();
   const userDetails = useSelector((state) => state?.login?.user);
-   const departmentsListData = useSelector((state: RootState) => state.requests.departments);
-   const departmentsOptions = departmentsListData?.map((i)=> ({ label: i.Title, value: i.Title }));
- 
+  
   const [menuVisible, setMenuVisible] = useState(false);
   const [attachments, setAttachments] = useState([]);
   const [replyOptionsVisible, setReplyOptionsVisible] = useState(false);
@@ -99,8 +100,13 @@ const TicketDetails = ({ route }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showSubTicketModal, setShowSubTicketModal] = useState(false);
   const [consultant, setConsultant] = useState([]);
+  const [agent, setAgent] = useState([]);
+  const [teamMember, setTeamMember] = useState([]);
+  const [selectedTeamMember, setSelectedTeamMember] = useState({});
   const [isConsult, setISConsultant] = useState(false);
   const [isTransfer, setISTransfer] = useState(false);
+  const [isEscalate, setISEscalate] = useState(false);
+  const [isReview, setISReview] = useState(false);
   const [selectedTeams, setSelectedTeams] = useState('');
   const [preAssignName, setPreAssignName] = useState("");
   const [TimeSpendValue, setTimeSpendValue] = useState();
@@ -124,7 +130,29 @@ const TicketDetails = ({ route }) => {
   const { data: RequesterEmailTemp, isLoading: isEmailTemplatesLoading, refetch: refetchEmailTemplates } = useFetchEmailTemplates("Requester - Public Comment Created");
   const { data: TeamsData, isLoading: isDepartmentsLoading, refetch: refetchDepartments } = useDepartments();
   const { data: ListUsers, isLoading: isFetchUsersLoading, refetch: refetchUsers } = useFetchUsers();
+
+  const departmentsListData = useSelector((state: RootState) => state.requests.departments);
+  const departmentsOptions = departmentsListData?.map((i)=> ({ label: i.Title, value: i.Title }));
   
+  
+  const EscalationTeamdepartmentsOptions = departmentsListData?.filter(i=> i.EscalationTeam === 'Yes')?.map((i)=> ({ label: i.Title, value: i.Title }));
+
+
+  const TicktesDepartment = TeamsData?.filter(item=> item.Title === ticketData?.DepartmentName)?.[0];
+  const Teammembers1Id = TicktesDepartment?.Teammembers1Id || [];
+
+  const TeamMembersOptions = ListUsers?.filter(
+    (user) => Teammembers1Id?.includes(user.UsersId)
+  )?.map(i=> ({ label: i.FullName, value: i.FullName, ...i }));
+
+  const TeambasedonDept = TeamsData?.filter(item=> item.Title === selectedTeams)?.[0];
+  const TeammemberIdbasedonDept = TeambasedonDept?.Teammembers1Id || [];
+
+  const TeamMembersOptionBasedOnDept = ListUsers?.filter(
+    (user) => TeammemberIdbasedonDept?.includes(user.UsersId)
+  )?.map(i=> ({ label: i.FullName, value: i.FullName, ...i }));
+  
+
   const getDisplayName = (fileName: string) => {
     const parts = fileName.split('___');
     return parts.length > 1 ? parts[1] : fileName;
@@ -225,6 +253,8 @@ const TicketDetails = ({ route }) => {
   const handleConsultant = useCallback((fieldName, newValue) => {
     if (fieldName === 'Consultant') {
       setConsultant(newValue);
+    } else if (fieldName === 'Agent') {
+      setAgent(newValue);
     }
   }, []);
 
@@ -298,6 +328,21 @@ const TicketDetails = ({ route }) => {
         richTextRef.current.setContentHTML(defaultContent);
       }
     } else if (isOpenReply && isTransfer) {
+      const defaultContent = `
+        <p>Please take a look at this ticket</p>
+        <p>${ticketSQNo || ``}</p>
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+        <p>Regards</p>
+        <p style="margin-bottom: 4px;">${userDetails?.FullName || ``}</p>
+        <p style="margin-bottom: 4px;">${userDetails?.Department || ``}</p>
+        <p style="margin-bottom: 0;">${userDetails?.Mobile || ``}</p>
+      `;
+      setComment(defaultContent);
+      if (richTextRef.current) {
+        richTextRef.current.setContentHTML(defaultContent);
+      }
+    } else if (isOpenReply && isEscalate) {
       const defaultContent = `
         <p>Please take a look at this ticket</p>
         <p>${ticketSQNo || ``}</p>
@@ -949,7 +994,7 @@ const TicketDetails = ({ route }) => {
         CommentType: "Private",
         CommentBody: encodeURIComponent(comment).replace(/"/g, '|$|'),
         CommentsTo: ReqEmail,
-        CommentsToName: 'Private',
+        CommentsToName: ReqName,
         NoofAttachments: "",
         TimeSpend: TimeSpendValue,
         MarkAsAnswer: MarkAsAnswer,
@@ -1011,18 +1056,226 @@ const TicketDetails = ({ route }) => {
       } catch (error) {
         console.error('Error while creating ticket:', error);
       }
+    } else if (replyType === 'consult'){
+      
+     
+      const commentNo = (CommentsForReply?.length + 1).toString();
+      const newComment = {
+        CommentNo: commentNo,
+        CommentedBy: userDetails?.FullName,
+        CommentedById: userDetails?.Email,
+        CommentedDate: new Date().toISOString(),
+        CommentType: "Consult",
+        CommentBody: encodeURIComponent(comment).replace(/"/g, '|$|'),
+        CommentsTo: selectedTeamMember?.Email,
+        CommentsToName: selectedTeamMember?.FullName,
+        NoofAttachments: "",
+        TimeSpend: TimeSpendValue,
+        MarkAsAnswer: MarkAsAnswer,
+      };
+      const updatedComments = CommentsForReply?.length > 0
+        ? [...CommentsForReply, newComment]
+        : [newComment];
+        
+      setCommentsForReply(updatedComments);
+      ticketAction?.push({
+        action: "Consult",
+        oldvalue: '',
+        newvalue: comment?.replace('<p', '')?.replace('</p>', '').replace(/<[^>]*>/g, ''),
+        modifiedby: userDetails?.FullName,
+        date: new Date().toISOString(),
+      });
+
+
+      let finalTemplate = {
+        Comments: JSON.stringify(updatedComments),
+        TicketDetails: '',
+        LastCommentNo: updatedComments.length.toString(),
+        ActionOnTicket: JSON.stringify(ticketAction),
+      };
+       
+      try {
+        const updateUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items(${ticketID})`;
+       
+        const res = await axios.post(updateUrl, finalTemplate, {
+          headers: {
+            Accept: "application/json;odata=nometadata",
+            "Content-type": "application/json;odata=nometadata",
+            "odata-version": "",
+            "IF-MATCH": "*",
+            "X-HTTP-Method": "MERGE",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (res.status === 204 || res.status === 200) {
+          if (attachments && attachments.length > 0) {
+            for (let i = 0; i < attachments.length; i++) {
+              const originalName = attachments[i].name || "file";
+              const cleanName = originalName.replace(
+                /[`~!@#$%^&*()|+\=?;:'",<>\\\/{}\[\]]/g,
+                "_"
+              );
+              attachments[i].name = `${commentNo}___${cleanName}`;
+            }
+            await uploadAttachments("HR365HDMTickets", ticketID, attachments);
+          }
+          setIsOpenReply(false);
+          setAttachments([]);
+          console.log("Ticket updated successfully:");
+        }
+      } catch (error) {
+        console.error('Error while creating ticket:', error);
+      }
+    }  else if (replyType === 'transfer'){
+      const commentNo = (CommentsForReply?.length + 1).toString();
+      const newComment = {
+        CommentNo: commentNo,
+        CommentedBy: userDetails?.FullName,
+        CommentedById: userDetails?.Email,
+        CommentedDate: new Date().toISOString(),
+        CommentType: "Transfer",
+        CommentBody: encodeURIComponent(comment).replace(/"/g, '|$|'),
+        CommentsTo: selectedTeamMember?.Email,
+        CommentsToName: selectedTeamMember?.FullName,
+        NoofAttachments: "",
+        TimeSpend: TimeSpendValue,
+        MarkAsAnswer: MarkAsAnswer,
+      };
+      const updatedComments = CommentsForReply?.length > 0
+        ? [...CommentsForReply, newComment]
+        : [newComment];
+        console.log(updatedComments, 'updatedComments');
+        
+      setCommentsForReply(updatedComments);
+      ticketAction?.push({
+        action: "Transfer",
+        oldvalue: '',
+        newvalue: comment?.replace('<p', '')?.replace('</p>', '').replace(/<[^>]*>/g, ''),
+        modifiedby: userDetails?.FullName,
+        date: new Date().toISOString(),
+      });
+
+
+      let finalTemplate = {
+        Comments: JSON.stringify(updatedComments),
+        TicketDetails: '',
+        LastCommentNo: updatedComments.length.toString(),
+        ActionOnTicket: JSON.stringify(ticketAction),
+      };
+       
+      try {
+        const updateUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items(${ticketID})`;
+       
+        const res = await axios.post(updateUrl, finalTemplate, {
+          headers: {
+            Accept: "application/json;odata=nometadata",
+            "Content-type": "application/json;odata=nometadata",
+            "odata-version": "",
+            "IF-MATCH": "*",
+            "X-HTTP-Method": "MERGE",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (res.status === 204 || res.status === 200) {
+          if (attachments && attachments.length > 0) {
+            for (let i = 0; i < attachments.length; i++) {
+              const originalName = attachments[i].name || "file";
+              const cleanName = originalName.replace(
+                /[`~!@#$%^&*()|+\=?;:'",<>\\\/{}\[\]]/g,
+                "_"
+              );
+              attachments[i].name = `${commentNo}___${cleanName}`;
+            }
+            await uploadAttachments("HR365HDMTickets", ticketID, attachments);
+          }
+          setIsOpenReply(false);
+          setAttachments([]);
+          console.log("Ticket updated successfully:");
+        }
+      } catch (error) {
+        console.error('Error while creating ticket:', error);
+      }
+    }  else if (replyType === 'escalate'){
+      const commentNo = (CommentsForReply?.length + 1).toString();
+      const newComment = {
+        CommentNo: commentNo,
+        CommentedBy: userDetails?.FullName,
+        CommentedById: userDetails?.Email,
+        CommentedDate: new Date().toISOString(),
+        CommentType: "Escalate",
+        CommentBody: encodeURIComponent(comment).replace(/"/g, '|$|'),
+        CommentsTo: selectedTeamMember?.Email,
+        CommentsToName: selectedTeamMember?.FullName,
+        NoofAttachments: "",
+        TimeSpend: TimeSpendValue,
+        MarkAsAnswer: MarkAsAnswer,
+      };
+      const updatedComments = CommentsForReply?.length > 0
+        ? [...CommentsForReply, newComment]
+        : [newComment];
+        console.log(updatedComments, 'updatedComments');
+        
+      setCommentsForReply(updatedComments);
+      ticketAction?.push({
+        action: "Escalate",
+        oldvalue: '',
+        newvalue: comment?.replace('<p', '')?.replace('</p>', '').replace(/<[^>]*>/g, ''),
+        modifiedby: userDetails?.FullName,
+        date: new Date().toISOString(),
+      });
+
+
+      let finalTemplate = {
+        Comments: JSON.stringify(updatedComments),
+        TicketDetails: '',
+        LastCommentNo: updatedComments.length.toString(),
+        ActionOnTicket: JSON.stringify(ticketAction),
+      };
+       
+      try {
+        const updateUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items(${ticketID})`;
+       
+        const res = await axios.post(updateUrl, finalTemplate, {
+          headers: {
+            Accept: "application/json;odata=nometadata",
+            "Content-type": "application/json;odata=nometadata",
+            "odata-version": "",
+            "IF-MATCH": "*",
+            "X-HTTP-Method": "MERGE",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (res.status === 204 || res.status === 200) {
+          if (attachments && attachments.length > 0) {
+            for (let i = 0; i < attachments.length; i++) {
+              const originalName = attachments[i].name || "file";
+              const cleanName = originalName.replace(
+                /[`~!@#$%^&*()|+\=?;:'",<>\\\/{}\[\]]/g,
+                "_"
+              );
+              attachments[i].name = `${commentNo}___${cleanName}`;
+            }
+            await uploadAttachments("HR365HDMTickets", ticketID, attachments);
+          }
+          setIsOpenReply(false);
+          setAttachments([]);
+          console.log("Ticket updated successfully:");
+        }
+      } catch (error) {
+        console.error('Error while creating ticket:', error);
+      }
     }
   }
   
   return (
     <KeyboardAvoidingView 
           style={{ flex: 1 }} 
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         > 
         <ScrollView
           style={{flex: 1}}
           contentContainerStyle={{}}
-          keyboardShouldPersistTaps="always"
+          keyboardShouldPersistTaps="handled"
         >
           <TouchableWithoutFeedback onPress={closeAllDropdowns}>
             <View style={[styles.container, { flexGrow: 1 }]}>
@@ -1099,6 +1352,9 @@ const TicketDetails = ({ route }) => {
                         .replace(/\n\s*\n/g, '\n')
                         .trim();
                   const isCommentTypePrivate = item?.CommentType == "Private" ? true : false;
+                  const isCommentTypeConsult = item?.CommentType == "Consult" ? true : false;
+                  const isCommentTypeTransfer = item?.CommentType == "Transfer" ? true : false;
+                  const isCommentTypeEscalated = item?.CommentType == "Escalate" ? true : false;
                   if (isCommentTypePrivate && settings?.PrivateNoteShowSetting !== "On") return null;
 
                   const commentAttachments = CommentsAttachments?.filter(att => att.fileName.startsWith(`${item.CommentNo}___`));
@@ -1108,14 +1364,31 @@ const TicketDetails = ({ route }) => {
                         <View style={styles.commentCardHeadRow}>
                             <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
                               {
-                                isCommentTypePrivate ?
-                                <Text style={styles.commentTitle}>
-                                  {item?.CommentedBy} added a private note
-                                </Text>
-                                : <Text style={styles.commentTitle}> {item?.CommentedBy} replied to {item?.CommentsToName}</Text>
+                                isCommentTypePrivate ? (
+                                  <Text style={styles.commentTitle}>
+                                    {item?.CommentedBy} added a private note
+                                  </Text>
+                                ) : isCommentTypeConsult ? (
+                                  <Text style={styles.commentTitle}>
+                                    {item?.CommentedBy} forwarded ticket to {item?.CommentsToName}
+                                  </Text>
+                                ) : isCommentTypeTransfer ? (
+                                  <Text style={styles.commentTitle}>
+                                    {item?.CommentedBy} transfered ticket to {item?.CommentsToName}
+                                  </Text>
+                                ) : isCommentTypeEscalated ? (
+                                  <Text style={styles.commentTitle}>
+                                    {item?.CommentedBy} escalated ticket to {item?.CommentsToName}
+                                  </Text>
+                                ): (
+                                  <Text style={styles.commentTitle}>
+                                    {item?.CommentedBy} replied ticket to {item?.CommentsToName}
+                                  </Text>
+                                )
                               }
+
                               {
-                                isCommentTypePrivate &&
+                                (isCommentTypePrivate || isCommentTypeConsult || isCommentTypeTransfer || isCommentTypeEscalated) &&
                                 <View style={{ alignItems: "center", justifyContent: "flex-start", marginLeft: 4 }}>
                                   <Ionicons name="lock-closed" size={16} color="#000" />
                                 </View>
@@ -1193,6 +1466,7 @@ const TicketDetails = ({ route }) => {
                           <View style={styles.dropdownMenu}>
                             <TouchableOpacity style={styles.dropdownItem} onPress={()=> {
                               setISConsultant(true);
+                              setReplyType('consult')
                               setIsOpenReply(true);
                               closeMenu();
                               }}>
@@ -1202,6 +1476,7 @@ const TicketDetails = ({ route }) => {
                             <TouchableOpacity style={styles.dropdownItem} onPress={()=>{
                               setISTransfer(true);
                               setIsOpenReply(true);
+                              setReplyType('transfer')
                               closeMenu();
                             }}>
                               <Ionicons name="swap-horizontal-outline" size={16} color="#026367" style={styles.dropdownIcon} />
@@ -1215,7 +1490,12 @@ const TicketDetails = ({ route }) => {
                               <Ionicons name="cut-outline" size={16} color="#026367" style={styles.dropdownIcon} />
                               <Text style={styles.dropdownText}>Split</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.dropdownItem} onPress={closeMenu}>
+                            <TouchableOpacity style={styles.dropdownItem} onPress={()=>{
+                              setISEscalate(true);
+                              setIsOpenReply(true);
+                              setReplyType('escalate');
+                              closeMenu();
+                            }}>
                               <Ionicons name="arrow-up-circle-outline" size={16} color="#026367" style={styles.dropdownIcon} />
                               <Text style={styles.dropdownText}>Escalate</Text>
                             </TouchableOpacity>
@@ -1226,7 +1506,11 @@ const TicketDetails = ({ route }) => {
                               <Ionicons name="layers-outline" size={16} color="#026367" style={styles.dropdownIcon} />
                               <Text style={styles.dropdownText}>Subticket</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.dropdownItem} onPress={closeMenu}>
+                            <TouchableOpacity style={styles.dropdownItem} onPress={()=>{
+                              setISReview(true);
+                              setIsOpenReply(true);
+                              closeMenu();
+                            }}>
                               <Ionicons name="eye-outline" size={16} color="#026367" style={styles.dropdownIcon} />
                               <Text style={styles.dropdownText}>Review</Text>
                             </TouchableOpacity>
@@ -1243,16 +1527,32 @@ const TicketDetails = ({ route }) => {
                       isConsult &&
                         <View style={{width: '100%', marginBottom: 10,}}>
                           <Text style={styles.label}>Agent <Text style={styles.requredStar}>*</Text></Text>
-                          <PeoplePickerMain
-                            fieldName="Consultant"
-                            values={{ Consultant: consultant }}
-                            setFieldValue={handleConsultant}
+                          <Dropdown
+                            style={styles.dropdown}
+                            placeholderStyle={styles.placeholder}
+                            selectedTextStyle={styles.selectedText}
+                            data={TeamMembersOptions}
+                            labelField="label"
+                            valueField="value"
+                            placeholder="Select Teams"
+                            searchPlaceholder="Search..."
+                            value={teamMember}
+                            onChange={(item) => {
+                              setTeamMember(item.value)
+                              setSelectedTeamMember(item);
+                            }}
+                            renderRightIcon={() => (
+                              <Ionicons name="chevron-down" size={18} color="#333" />
+                            )}
+                            containerStyle={styles.dropdownContainer}
+                            itemTextStyle={styles.dropdownItems}
                           />
                         </View>
                     }
                     {
-                      isTransfer &&
+                      isReview &&
                         <View style={{width: '100%', marginBottom: 10,}}>
+                          <Text style={styles.label}>Agent <Text style={styles.requredStar}>*</Text></Text>
                           <Dropdown
                             style={styles.dropdown}
                             placeholderStyle={styles.placeholder}
@@ -1273,10 +1573,99 @@ const TicketDetails = ({ route }) => {
                             containerStyle={styles.dropdownContainer}
                             itemTextStyle={styles.dropdownItems}
                           />
-                          <PeoplePickerMain
-                            fieldName="Consultant"
-                            values={{ Consultant: consultant }}
-                            setFieldValue={handleConsultant}
+                        </View>
+                    }
+                    {
+                      isTransfer &&
+                        <View style={{width: '100%', marginBottom: 10,}}>
+                          <Dropdown
+                            style={styles.dropdown}
+                            placeholderStyle={styles.placeholder}
+                            selectedTextStyle={styles.selectedText}
+                            data={departmentsOptions}
+                            labelField="label"
+                            valueField="value"
+                            placeholder="Select Teams"
+                            search={Array.isArray(departmentsOptions) && departmentsOptions?.length > 0}
+                            searchPlaceholder="Search..."
+                            value={selectedTeams}
+                            onChange={(item) => {
+                              setSelectedTeams(item.value);
+                              setTeamMember('')
+                              setSelectedTeamMember({});
+                            }}
+                            renderRightIcon={() => (
+                              <Ionicons name="chevron-down" size={18} color="#333" />
+                            )}
+                            containerStyle={styles.dropdownContainer}
+                            itemTextStyle={styles.dropdownItems}
+                          />
+                          <Dropdown
+                            style={styles.dropdown}
+                            placeholderStyle={styles.placeholder}
+                            selectedTextStyle={styles.selectedText}
+                            data={TeamMembersOptionBasedOnDept}
+                            labelField="label"
+                            valueField="value"
+                            placeholder="Select Teams"
+                            searchPlaceholder="Search..."
+                            value={teamMember}
+                            onChange={(item) => {
+                              setTeamMember(item.value)
+                              setSelectedTeamMember(item);
+                            }}
+                            renderRightIcon={() => (
+                              <Ionicons name="chevron-down" size={18} color="#333" />
+                            )}
+                            containerStyle={styles.dropdownContainer}
+                            itemTextStyle={styles.dropdownItems}
+                          />
+                        </View>
+                    }
+                    {
+                      isEscalate &&
+                        <View style={{width: '100%', marginBottom: 10,}}>
+                          <Dropdown
+                            style={styles.dropdown}
+                            placeholderStyle={styles.placeholder}
+                            selectedTextStyle={styles.selectedText}
+                            data={EscalationTeamdepartmentsOptions}
+                            labelField="label"
+                            valueField="value"
+                            placeholder="Select Teams"
+                            search={Array.isArray(departmentsOptions) && departmentsOptions?.length > 0}
+                            searchPlaceholder="Search..."
+                            value={selectedTeams}
+                            onChange={(item) => {
+                              setSelectedTeams(item.value);
+                              setTeamMember('')
+                              setSelectedTeamMember({});
+                            }}
+                            renderRightIcon={() => (
+                              <Ionicons name="chevron-down" size={18} color="#333" />
+                            )}
+                            containerStyle={styles.dropdownContainer}
+                            itemTextStyle={styles.dropdownItems}
+                          />
+                          <Dropdown
+                            style={styles.dropdown}
+                            placeholderStyle={styles.placeholder}
+                            selectedTextStyle={styles.selectedText}
+                            data={TeamMembersOptionBasedOnDept}
+                            labelField="label"
+                            valueField="value"
+                            placeholder="Select Teams"
+                            searchPlaceholder="Search..."
+                            value={teamMember}
+                            onChange={(item) => {
+                              setTeamMember(item.value)
+                              setSelectedTeamMember(item);
+                            }}
+                            renderRightIcon={() => (
+                              <Ionicons name="chevron-down" size={18} color="#333" />
+                            )}
+                            containerStyle={styles.dropdownContainer}
+                            itemTextStyle={styles.dropdownItems}
                           />
                         </View>
                     }
@@ -1292,7 +1681,6 @@ const TicketDetails = ({ route }) => {
                         style={styles.richInput}
                         useContainer={true}
                         enterKeyHint="send"
-                        initialFocus={true}
                         removeExtraSpaces={true}
                         placeholder=""
                         placeholderTextColor="#333333"
@@ -1337,62 +1725,81 @@ const TicketDetails = ({ route }) => {
                           <Text style={styles.discardText}>Discard</Text>
                         </TouchableOpacity>
                       </View>
-                      <View style={styles.row}>
-                        <TouchableOpacity style={styles.saveReplyButton} onPress={handleReply}>
-                          <Text style={styles.saveReplyText}>Save</Text>
-                        </TouchableOpacity>
-                        <View style={{position: 'relative'}}>
-                          <TouchableOpacity onPress={toggleReplyOptions} style={styles.saveOptions}>
-                            <Icon name="chevron-down-outline" size={20} color="#fff" />
+                      {
+                        isConsult ? 
+                        <View style={styles.row}>
+                          <TouchableOpacity style={styles.saveReplyButton} onPress={handleReply}>
+                            <Text style={styles.saveReplyText}>Consult</Text>
                           </TouchableOpacity>
-                          {replyOptionsVisible && (
-                            <View style={[styles.dropdownReplyMenu]}>
-                              <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
-                                e.stopPropagation();
-                                closeReplyReplyOptions();
-                              }}>
-                                <Text style={[styles.dropdownReplyText]}>Update and set a status as Waiting on Customer</Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
-                                e.stopPropagation();
-                                closeReplyReplyOptions();
-                              }}>
-                                <Text style={[styles.dropdownReplyText]}>Update and set a status as Closed</Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
-                                e.stopPropagation();
-                                closeReplyReplyOptions();
-                              }}>
-                                <Text style={[styles.dropdownReplyText]}>Update and set a status as Waiting on Third Party</Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
-                                e.stopPropagation();
-                                closeReplyReplyOptions();
-                              }}>
-                                <Text style={[styles.dropdownReplyText]}>Update and set a status as Unassigned</Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
-                                e.stopPropagation();
-                                closeReplyReplyOptions();
-                              }}>
-                                <Text style={[styles.dropdownReplyText]}>Update and set a status as Resolved</Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
-                                e.stopPropagation();
-                                closeReplyReplyOptions();
-                              }}>
-                                <Text style={[styles.dropdownReplyText]}>Update and set a status as Open</Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
-                                e.stopPropagation();
-                                closeReplyReplyOptions();
-                              }}>
-                                <Text style={[styles.dropdownReplyText]}>Update and set a status as Pending</Text>
-                              </TouchableOpacity>
-                            </View>
-                          )}
+                        </View> : isTransfer ? 
+                        <View style={styles.row}>
+                          <TouchableOpacity style={styles.saveReplyButton} onPress={handleReply}>
+                            <Text style={styles.saveReplyText}>Transfer</Text>
+                          </TouchableOpacity>
+                        </View> : isEscalate ? 
+                        <View style={styles.row}>
+                          <TouchableOpacity style={styles.saveReplyButton} onPress={handleReply}>
+                            <Text style={styles.saveReplyText}>Escalate</Text>
+                          </TouchableOpacity>
+                        </View> :
+                        <View style={styles.row}>
+                          <TouchableOpacity style={styles.saveReplyButton} onPress={handleReply}>
+                            <Text style={styles.saveReplyText}>Save</Text>
+                          </TouchableOpacity>
+                          <View style={{position: 'relative'}}>
+                            <TouchableOpacity onPress={toggleReplyOptions} style={styles.saveOptions}>
+                              <Icon name="chevron-down-outline" size={20} color="#fff" />
+                            </TouchableOpacity>
+                            {replyOptionsVisible && (
+                              <View style={[styles.dropdownReplyMenu]}>
+                                <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
+                                  e.stopPropagation();
+                                  closeReplyReplyOptions();
+                                }}>
+                                  <Text style={[styles.dropdownReplyText]}>Update and set a status as Waiting on Customer</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
+                                  e.stopPropagation();
+                                  closeReplyReplyOptions();
+                                }}>
+                                  <Text style={[styles.dropdownReplyText]}>Update and set a status as Closed</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
+                                  e.stopPropagation();
+                                  closeReplyReplyOptions();
+                                }}>
+                                  <Text style={[styles.dropdownReplyText]}>Update and set a status as Waiting on Third Party</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
+                                  e.stopPropagation();
+                                  closeReplyReplyOptions();
+                                }}>
+                                  <Text style={[styles.dropdownReplyText]}>Update and set a status as Unassigned</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
+                                  e.stopPropagation();
+                                  closeReplyReplyOptions();
+                                }}>
+                                  <Text style={[styles.dropdownReplyText]}>Update and set a status as Resolved</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
+                                  e.stopPropagation();
+                                  closeReplyReplyOptions();
+                                }}>
+                                  <Text style={[styles.dropdownReplyText]}>Update and set a status as Open</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.dropdownReplyItem} onPress={(e) => {
+                                  e.stopPropagation();
+                                  closeReplyReplyOptions();
+                                }}>
+                                  <Text style={[styles.dropdownReplyText]}>Update and set a status as Pending</Text>
+                                </TouchableOpacity>
+                              </View>
+                            )}
+                          </View>
                         </View>
-                      </View>
+                      }
+                      
                     </View>
                   </View>
                 }
