@@ -104,6 +104,7 @@ const TicketDetails = ({ route }) => {
   const [teamMember, setTeamMember] = useState([]);
   const [selectedTeamMember, setSelectedTeamMember] = useState({});
   const [isConsult, setISConsultant] = useState(false);
+  const [isPrivateNote, setISPrivateNote] = useState(false);
   const [isTransfer, setISTransfer] = useState(false);
   const [isEscalate, setISEscalate] = useState(false);
   const [isReview, setISReview] = useState(false);
@@ -343,6 +344,21 @@ const TicketDetails = ({ route }) => {
         richTextRef.current.setContentHTML(defaultContent);
       }
     } else if (isOpenReply && isEscalate) {
+      const defaultContent = `
+        <p>Please take a look at this ticket</p>
+        <p>${ticketSQNo || ``}</p>
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+        <p>Regards</p>
+        <p style="margin-bottom: 4px;">${userDetails?.FullName || ``}</p>
+        <p style="margin-bottom: 4px;">${userDetails?.Department || ``}</p>
+        <p style="margin-bottom: 0;">${userDetails?.Mobile || ``}</p>
+      `;
+      setComment(defaultContent);
+      if (richTextRef.current) {
+        richTextRef.current.setContentHTML(defaultContent);
+      }
+    } else if (isOpenReply && isReview) {
       const defaultContent = `
         <p>Please take a look at this ticket</p>
         <p>${ticketSQNo || ``}</p>
@@ -977,14 +993,13 @@ const TicketDetails = ({ route }) => {
           }
           setIsOpenReply(false);
           setAttachments([]);
-          await sendMail(commentNo);
           console.log("Ticket updated successfully:");
         }
       } catch (error) {
         console.error('Error while creating ticket:', error);
       }
     } else if (replyType === 'private note'){
-     
+      
       const commentNo = (CommentsForReply?.length + 1).toString();
       const newComment = {
         CommentNo: commentNo,
@@ -1010,13 +1025,7 @@ const TicketDetails = ({ route }) => {
         modifiedby: userDetails?.FullName,
         date: new Date().toISOString(),
       });
-      if (JSON.parse(ticketAction) == null ||
-        JSON.parse(ticketAction) == undefined ||
-        JSON.parse(ticketAction)?.length == 0
-      ) {
-      } else {
-        ticketAction.push(...JSON.parse(ticketAction))
-      }
+      
       let finalTemplate = {
         Comments: JSON.stringify(updatedComments),
         TicketDetails: '',
@@ -1264,7 +1273,78 @@ const TicketDetails = ({ route }) => {
       } catch (error) {
         console.error('Error while creating ticket:', error);
       }
-    }
+    }  else if (replyType === 'review'){
+      
+     
+      const commentNo = (CommentsForReply?.length + 1).toString();
+      const newComment = {
+        CommentNo: commentNo,
+        CommentedBy: userDetails?.FullName,
+        CommentedById: userDetails?.Email,
+        CommentedDate: new Date().toISOString(),
+        CommentType: "Review",
+        CommentBody: encodeURIComponent(comment).replace(/"/g, '|$|'),
+        CommentsTo: selectedTeamMember?.Email,
+        CommentsToName: selectedTeamMember?.FullName,
+        NoofAttachments: "",
+        TimeSpend: TimeSpendValue,
+        MarkAsAnswer: MarkAsAnswer,
+      };
+      const updatedComments = CommentsForReply?.length > 0
+        ? [...CommentsForReply, newComment]
+        : [newComment];
+        
+      setCommentsForReply(updatedComments);
+      ticketAction?.push({
+        action: "Review",
+        oldvalue: '',
+        newvalue: comment?.replace('<p', '')?.replace('</p>', '').replace(/<[^>]*>/g, ''),
+        modifiedby: userDetails?.FullName,
+        date: new Date().toISOString(),
+      });
+
+
+      let finalTemplate = {
+        Comments: JSON.stringify(updatedComments),
+        TicketDetails: '',
+        LastCommentNo: updatedComments.length.toString(),
+        ActionOnTicket: JSON.stringify(ticketAction),
+      };
+       
+      try {
+        const updateUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items(${ticketID})`;
+       
+        const res = await axios.post(updateUrl, finalTemplate, {
+          headers: {
+            Accept: "application/json;odata=nometadata",
+            "Content-type": "application/json;odata=nometadata",
+            "odata-version": "",
+            "IF-MATCH": "*",
+            "X-HTTP-Method": "MERGE",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (res.status === 204 || res.status === 200) {
+          if (attachments && attachments.length > 0) {
+            for (let i = 0; i < attachments.length; i++) {
+              const originalName = attachments[i].name || "file";
+              const cleanName = originalName.replace(
+                /[`~!@#$%^&*()|+\=?;:'",<>\\\/{}\[\]]/g,
+                "_"
+              );
+              attachments[i].name = `${commentNo}___${cleanName}`;
+            }
+            await uploadAttachments("HR365HDMTickets", ticketID, attachments);
+          }
+          setIsOpenReply(false);
+          setAttachments([]);
+          console.log("Ticket updated successfully:");
+        }
+      } catch (error) {
+        console.error('Error while creating ticket:', error);
+      }
+    } 
+    await sendMail(commentNo);
   }
   
   return (
@@ -1355,6 +1435,8 @@ const TicketDetails = ({ route }) => {
                   const isCommentTypeConsult = item?.CommentType == "Consult" ? true : false;
                   const isCommentTypeTransfer = item?.CommentType == "Transfer" ? true : false;
                   const isCommentTypeEscalated = item?.CommentType == "Escalate" ? true : false;
+                  const isCommentTypeReview = item?.CommentType == "Review" ? true : false;
+
                   if (isCommentTypePrivate && settings?.PrivateNoteShowSetting !== "On") return null;
 
                   const commentAttachments = CommentsAttachments?.filter(att => att.fileName.startsWith(`${item.CommentNo}___`));
@@ -1380,9 +1462,13 @@ const TicketDetails = ({ route }) => {
                                   <Text style={styles.commentTitle}>
                                     {item?.CommentedBy} escalated ticket to {item?.CommentsToName}
                                   </Text>
-                                ): (
+                                ) : isCommentTypeReview ? (
                                   <Text style={styles.commentTitle}>
-                                    {item?.CommentedBy} replied ticket to {item?.CommentsToName}
+                                    {item?.CommentedBy} reviewed ticket to {item?.CommentsToName}
+                                  </Text>
+                                ) : (
+                                  <Text style={styles.commentTitle}>
+                                    {item?.CommentedBy} replied to {item?.CommentsToName}
                                   </Text>
                                 )
                               }
@@ -1453,6 +1539,7 @@ const TicketDetails = ({ route }) => {
                         <TouchableOpacity style={styles.actionButton} onPress={()=> {
                             setIsOpenReply(true)
                             setReplyType("private note");
+                            setISPrivateNote(true);
                           }}>
                           <Ionicons name="document-text-outline" size={20} color="#352f2fff" />
                           <Text style={styles.actionText}>Private Note</Text>
@@ -1509,6 +1596,7 @@ const TicketDetails = ({ route }) => {
                             <TouchableOpacity style={styles.dropdownItem} onPress={()=>{
                               setISReview(true);
                               setIsOpenReply(true);
+                              setReplyType("review");
                               closeMenu();
                             }}>
                               <Ionicons name="eye-outline" size={16} color="#026367" style={styles.dropdownIcon} />
@@ -1534,7 +1622,7 @@ const TicketDetails = ({ route }) => {
                             data={TeamMembersOptions}
                             labelField="label"
                             valueField="value"
-                            placeholder="Select Teams"
+                            placeholder="Select Consultant"
                             searchPlaceholder="Search..."
                             value={teamMember}
                             onChange={(item) => {
@@ -1552,20 +1640,19 @@ const TicketDetails = ({ route }) => {
                     {
                       isReview &&
                         <View style={{width: '100%', marginBottom: 10,}}>
-                          <Text style={styles.label}>Agent <Text style={styles.requredStar}>*</Text></Text>
                           <Dropdown
                             style={styles.dropdown}
                             placeholderStyle={styles.placeholder}
                             selectedTextStyle={styles.selectedText}
-                            data={departmentsOptions}
+                            data={TeamMembersOptions}
                             labelField="label"
                             valueField="value"
-                            placeholder="Select Teams"
-                            search={Array.isArray(departmentsOptions) && departmentsOptions?.length > 0}
+                            placeholder="Select Agent"
                             searchPlaceholder="Search..."
-                            value={selectedTeams}
+                            value={teamMember}
                             onChange={(item) => {
-                              setSelectedTeams(item.value)
+                              setTeamMember(item.value)
+                              setSelectedTeamMember(item);
                             }}
                             renderRightIcon={() => (
                               <Ionicons name="chevron-down" size={18} color="#333" />
@@ -1607,7 +1694,7 @@ const TicketDetails = ({ route }) => {
                             data={TeamMembersOptionBasedOnDept}
                             labelField="label"
                             valueField="value"
-                            placeholder="Select Teams"
+                            placeholder="Select Teams Member"
                             searchPlaceholder="Search..."
                             value={teamMember}
                             onChange={(item) => {
@@ -1654,7 +1741,7 @@ const TicketDetails = ({ route }) => {
                             data={TeamMembersOptionBasedOnDept}
                             labelField="label"
                             valueField="value"
-                            placeholder="Select Teams"
+                            placeholder="Select Teams Member"
                             searchPlaceholder="Search..."
                             value={teamMember}
                             onChange={(item) => {
@@ -1720,6 +1807,9 @@ const TicketDetails = ({ route }) => {
                           setReplyType("");
                           setISConsultant(false);
                           setISTransfer(false);
+                          setISReview(false);
+                          setISEscalate(false);
+                          setISPrivateNote(false);
                         }}>
                           <Ionicons name="close" size={20} color="#352f2fff" />
                           <Text style={styles.discardText}>Discard</Text>
@@ -1740,6 +1830,16 @@ const TicketDetails = ({ route }) => {
                         <View style={styles.row}>
                           <TouchableOpacity style={styles.saveReplyButton} onPress={handleReply}>
                             <Text style={styles.saveReplyText}>Escalate</Text>
+                          </TouchableOpacity>
+                        </View> : isReview ? 
+                        <View style={styles.row}>
+                          <TouchableOpacity style={styles.saveReplyButton} onPress={handleReply}>
+                            <Text style={styles.saveReplyText}>Review</Text>
+                          </TouchableOpacity>
+                        </View> : isPrivateNote ? 
+                        <View style={styles.row}>
+                          <TouchableOpacity style={styles.saveReplyButton} onPress={handleReply}>
+                            <Text style={styles.saveReplyText}>Private Note</Text>
                           </TouchableOpacity>
                         </View> :
                         <View style={styles.row}>
