@@ -5,16 +5,18 @@ import { Dropdown } from "react-native-element-dropdown";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { useDepartments, useServices } from '../../../hooks/useRequests';
+import { useDepartments, useFetchSettings, useServices } from '../../../hooks/useRequests';
 import { useUnassignedTickets } from '../../../hooks/useTickets';
 import { useNavigation } from '@react-navigation/native';
 import { useNotification } from '../../Alerts/NotificationProvider';
 import { RootState } from '../../../redux/rootReducer';
+import axios from 'axios';
 
-const CreateTicket = ({ ticketData, handleSaveSubTicket, handleCancelSubTicket }) => {
+const SplitTicket = ({ ticketData, handleSaveSplitTicket, handleCancelSplitTicket, CommentsForReply, userDetails, preAssignName, ReqEmail, SLAResponseDone, SLAResponseInfoData, SLABreachData }) => {
     const [selectedTeam, setSelectedTeam] = useState('');
     const [ticketAlphabets, setTicketAlphabets] = useState('');
     const [ticketProperties, setTicketProperties] = useState(JSON.parse(ticketData?.TicketProperties) || []);
+    const { data: settings } = useFetchSettings();
 
     const { show } = useNotification();
 
@@ -71,126 +73,256 @@ const CreateTicket = ({ ticketData, handleSaveSubTicket, handleCancelSubTicket }
 
     const filteredServices = formik.values.teams ? serviceListData?.filter(i => i.DepartName === formik.values.teams) : [];
     const serviceOptions = filteredServices?.map((i) => ({ label: i.SubCategory, value: i.SubCategory }));
-
+    console.log(departmentCode?.[0]?.Onqueue,'departmentCode');
+    
     const handleCancel = () => {
         formik.resetForm();
-        handleCancelSubTicket();
+        handleCancelSplitTicket();
+    };
+
+    const generateGUID = () => {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+        }).toUpperCase();
+    }
+
+    const saveTicketId = async (
+        TicketData: any,
+        TeamTicketSuffix: "",
+        rowId: any,
+    ) => {
+        try {
+        const teamName = departmentCode?.[0]?.Onqueue;
+
+        const PrefixandID = parseInt(settings?.TicketPrefix?.trim()) + rowId;
+        const finalticketID = `Ticket#${rowId}`;
+        const ticktsequencewithoutSuffix = `${settings?.SequenceTitle}#${PrefixandID}`;
+
+        const ticketSequence =
+            TeamTicketSuffix === "On"
+            ? `${settings?.SequenceTitle}#${PrefixandID}-${teamName}`
+            : `${settings?.SequenceTitle}#${PrefixandID}`;
+
+        const generateRandomString = (length = 10) =>
+            Math.random().toString(20).substr(2, length);
+
+        const ticketId = rowId.toString();
+        const ylength = 12 - (4 + ticketId?.length);
+        const x = generateRandomString(4);
+        const y = generateRandomString(parseInt(ylength.toString()));
+        const generatedIssueID = x.toUpperCase() + ticketId + y.toUpperCase();
+
+        if (!finalticketID) return;
+
+        const _AutoAssignTicket =
+            settings?.AutoAssign === "On" ? "Open" : "Unassigned";
+
+        const finalTemplate = {
+            TicketID: finalticketID,
+            TicketseqWOsuffix: ticktsequencewithoutSuffix,
+            TicketSeqnumber: ticketSequence,
+            Status: _AutoAssignTicket,
+            IssueId: generatedIssueID,
+        };
+
+        const updateUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items(${rowId})`;
+
+        const res = await axios.post(updateUrl, finalTemplate, {
+            headers: {
+            Accept: "application/json;odata=nometadata",
+            "Content-type": "application/json;odata=nometadata",
+            "odata-version": "",
+            "IF-MATCH": "*",
+            "X-HTTP-Method": "MERGE",
+            Authorization: `Bearer ${token}`,
+            },
+        });
+
+        if (res.status === 204 || res.status === 200) {
+            console.log("Ticket updated successfully:", finalticketID);
+        }
+        } catch (error) {
+        console.error("Error updating ticket:", error?.response?.data || error?.message);
+        }
     };
 
     const handleSaveTicket = async (values) => {
+        const commentNo = (CommentsForReply?.length + 1).toString();
+        let CommentsTo = '';
+        let CommentsToEmail = '';
+        let ticketAction = [];
+        let SLAResponse: '';
         
-    const nextSubTicketChar = (SubticketPropties === null || SubticketPropties === undefined || SubticketPropties === '') 
-        ? 'A'
-        : String.fromCharCode(SubticketPropties.charCodeAt(0) + 1);
-
-    const TicketSequenceAlphabets = ticketData?.TicketSeqnumber + nextSubTicketChar;
-    
-    const departmentCodeForUpdate = departmentsListData?.filter(i => i.Title === values.teams);
-    
-    const updated = [...ticketProperties];
-    updated[0] = {                                
-        ...updated[0],
-        SubTickets: TicketSequenceAlphabets,
-        LastSubTicketCharacter: nextSubTicketChar,
-        DepartmentCode: departmentCode?.[0]?.Onqueue,
-    };
-
-    setTicketProperties(updated);
-
-    let ticketAction = [{
-      action: "Created SubTicket",
-      oldvalue: ticketData?.TicketSeqnumber,
-      newvalue: TicketSequenceAlphabets,
-      modifiedby: currUser?.FullName,
-      date: new Date(),
-    }];
-
-    const finalTemplate = {
-        Title: values?.title,
-        DepartmentName: values?.teams,
-        Services: values?.service,
-        TicketDescription: values?.comments || '',
-        Priority: ticketData?.Priority,
-        RequestType: ticketData?.RequestType,
-        RequesterId: currUser?.UsersId,
-        RequesterName: currUser?.FullName,
-        RequesterEmail: currUser?.Email,
-        TicketCreatedDate: new Date().toISOString(),
-        TicketProperties: JSON.stringify(updated),
-        TicketSeqnumber: TicketSequenceAlphabets,
-        TicketseqWOsuffix: TicketSequenceAlphabets,
-        ActionOnTicket: JSON.stringify(ticketAction),
-        SLAResolveInfo: ticketData?.SLAResolveInfo,
-        SLAResponseInfo: ticketData?.SLAResponseInfo
-    };
-
-    try {
-        const url = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items`;
-
-        const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-            Accept: 'application/json;odata=nometadata',
-            'Content-Type': 'application/json;odata=nometadata',
-            'odata-version': '',
-            Authorization: `Bearer ${token}`,
-            'IF-MATCH': '*',
-            'X-HTTP-Method': 'POST',
-        },
-        body: JSON.stringify(finalTemplate),
-        });
-
-        if (res.ok) {
-        const responseData = await res.json();
-        show({
-            type: 'success',
-            title: 'Success!',
-            message: 'Ticket created successfully!',
-            duration: 3000,
-            buttonEnabled: false,
-            callback: () => {
-                console.log('Notification dismissed');
-            },
-        });
-        setTimeout(() => {
-            refetchUnassignedTickets();
-            handleSaveSubTicket();
-            navigation.navigate('Tab', { screen: 'UnassignedTickets' });
-        }, 3000);
+        if (ReqEmail?.toLowerCase() == userDetails?.Email?.toLowerCase()) {
+            CommentsTo = preAssignName == null || preAssignName == undefined || preAssignName == "" ? "this ticket" : preAssignName;
+            CommentsToEmail = preAssignName == null || preAssignName == undefined || preAssignName == "" ? "this ticket" : preAssignName;
         } else {
-        const errorText = await res.text();
-        show({
-            type: 'error',
-            title: 'Error!',
-            message: 'Something went wrong..!',
-            duration: 3000,
-            buttonEnabled: false,
-            callback: () => {
-                console.log('Notification dismissed');
-            },
+            CommentsTo = ticketData?.RequesterName;
+            CommentsToEmail = ReqEmail;
+        };
+    
+        const departmentCodeForUpdate = departmentsListData?.filter(i => i.Title === values.teams);
+    
+            const updated = [...ticketProperties];
+            updated[0] = {                                
+                ...updated[0],
+                DepartmentCode: departmentCode?.[0]?.Onqueue,
+            };
+
+            const newComment = {
+                CommentNo: commentNo,
+                CommentedBy: userDetails?.FullName,
+                CommentedById: userDetails?.Email,
+                CommentedDate: new Date().toISOString(),
+                CommentType: "Reply",
+                CommentBody: encodeURIComponent(values?.comments).replace(/"/g, '|$|'),
+                CommentsTo: CommentsToEmail,
+                CommentsToName: CommentsTo,
+                NoofAttachments: "",
+                TimeSpend: '',
+                MarkAsAnswer: "No",
+                Guid: generateGUID(),
+            };
+
+        const updatedComments = CommentsForReply?.length > 0
+            ? [...CommentsForReply, newComment]
+            : [newComment];
+
+        ticketAction.push({
+            action: "Split",
+            oldvalue: '',
+            newvalue: values?.comments?.replace('<p>', '')?.replace('</p>', '')?.replace(/<[^>]*>/g, ''),
+            modifiedby: userDetails?.FullName,
+            date: new Date(),
         });
-        console.error('SharePoint call failed:', errorText);
+        ticketAction.push({
+            action: "Ticket Created",
+            oldvalue: '',
+            newvalue: 'Ticket Created',
+            modifiedby: userDetails?.FullName,
+            date: new Date(),
+        });
+
+        
+        const finalTemplate = {
+            Title: values?.title,
+            DepartmentName: values?.teams,
+            Services: values?.service,
+            Comments: JSON.stringify([newComment]),
+            Priority: ticketData?.Priority,
+            RequestType: ticketData?.RequestType,
+            RequesterId: currUser?.UsersId,
+            TicketDescription: `<div>${values?.comments}<div/>`,
+            Status: "Unassigned",
+            RequesterName: currUser?.FullName,
+            RequesterEmail: currUser?.Email,
+            TicketCreatedDate: new Date().toISOString(),
+            TicketProperties: JSON.stringify(updated),
+            ActionOnTicket: JSON.stringify(ticketAction),
+            MappedAssetDetail: "",
+            SLAResponseInfo: JSON.stringify([{
+                SLAResponseBreach: "No",
+                SLAResponseBreachOn: "",
+                SLAResponseReplyTime: "",
+                SLAResponseReplyDate: "",
+                SLAResponseReplyDay: "",
+                SLAResponseEscalateTime: "",
+                SLAResponseAlertTime: "",
+                SLAResponseNotifyType: "",
+                SLAResponseAlertTo: "",
+                SLAResponseMailSub: "",
+                SLAResponseMailBody: "",
+            }]),
+            SLAResolveInfo: JSON.stringify([{
+                SLAResolveBreach: "No",
+                SLAResolveBreachOn: "",
+                SLAResolveReplyTime: "",
+                SLAResolveReplyDate: "",
+                SLAResolveReplyDay: "",
+                SLAResolveEscalateTime: "",
+                SLAResolveAlertTime: "",
+                SLAResolveNotifyType: "",
+                SLAResolveAlertTo: "",
+                SLAResolveMailSub: "",
+                SLAResolveMailBody: "",
+            }])
+        };
+
+        // console.log(finalTemplate, 'test===');
+        
+
+        // return false;
+
+        try {
+            const url = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items`;
+
+            const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json;odata=nometadata',
+                'Content-Type': 'application/json;odata=nometadata',
+                'odata-version': '',
+                Authorization: `Bearer ${token}`,
+                'IF-MATCH': '*',
+                'X-HTTP-Method': 'POST',
+            },
+            body: JSON.stringify(finalTemplate),
+            });
+
+            if (res.ok) {
+            const responseData = await res.json();
+            await saveTicketId(responseData, "", responseData?.ID)
+            show({
+                type: 'success',
+                title: 'Success!',
+                message: 'Ticket created successfully!',
+                duration: 3000,
+                buttonEnabled: false,
+                callback: () => {
+                    console.log('Notification dismissed');
+                },
+            });
+            setTimeout(() => {
+                refetchUnassignedTickets();
+                handleSaveSplitTicket();
+                navigation.navigate('Tab', { screen: 'UnassignedTickets' });
+            }, 3000);
+            } else {
+            const errorText = await res.text();
+            show({
+                type: 'error',
+                title: 'Error!',
+                message: 'Something went wrong..!',
+                duration: 3000,
+                buttonEnabled: false,
+                callback: () => {
+                    console.log('Notification dismissed');
+                },
+            });
+            console.error('SharePoint call failed:', errorText);
+            }
+        } catch (error) {
+            show({
+                type: 'error',
+                title: 'Error!',
+                message: 'Something went wrong..!',
+                duration: 3000,
+                buttonEnabled: false,
+                callback: () => {
+                    console.log('Notification dismissed');
+                },
+            });
+            console.error('Error while creating ticket:', error);
         }
-    } catch (error) {
-        show({
-            type: 'error',
-            title: 'Error!',
-            message: 'Something went wrong..!',
-            duration: 3000,
-            buttonEnabled: false,
-            callback: () => {
-                console.log('Notification dismissed');
-            },
-        });
-        console.error('Error while creating ticket:', error);
-    }
-    console.log(finalTemplate, 'asdf');
+        console.log(finalTemplate, 'asdf');
     };
 
 
     return (
         <View style={styles.container}>
-            <Text style={styles.label}>Sub Ticket Title <Text style={styles.requredStar}>*</Text></Text>
+            <Text style={styles.label}>New Ticket Title <Text style={styles.requredStar}>*</Text></Text>
             <TextInput
                 style={[styles.input]}
                 value={formik.values.title}
@@ -270,7 +402,7 @@ const CreateTicket = ({ ticketData, handleSaveSubTicket, handleCancelSubTicket }
     );
 };
 
-export default CreateTicket;
+export default SplitTicket;
 
 const styles = StyleSheet.create({
     container: {

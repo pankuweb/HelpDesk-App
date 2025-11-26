@@ -8,6 +8,7 @@ interface NotificationState {
   type: 'success' | 'error';
   duration?: number;
   buttonEnabled?: boolean;
+  callback?: () => void;
 }
 
 interface NotificationContextType {
@@ -29,6 +30,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     visible: false,
     message: '',
     type: 'success',
+    callback: undefined,
   });
 
   const show = (options: {
@@ -42,9 +44,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     setNotification({
       ...options,
       visible: true,
-      message: options.message,
     });
-
   };
 
   const hide = () => {

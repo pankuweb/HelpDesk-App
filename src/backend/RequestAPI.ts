@@ -64,7 +64,7 @@ export async function fetchMyTickets() {
     const baseURL: any = state?.login?.tanent;
     const userID: any = state?.login?.user?.UsersId;
 
-    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=AssignedTo/Id eq ${userID}`;
+    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=AssignedTo/Id eq ${userID}&$orderby=Created desc`;
 
     const res = await axios.get(apiUrl, {
       headers: {
@@ -88,7 +88,7 @@ export async function fetchMyOpenTickets() {
     const baseURL: any = state?.login?.tanent;
     const userID: any = state?.login?.user?.UsersId;
 
-    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=AssignedTo/Id eq ${userID} and (Status eq 'Open')`;
+    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=AssignedTo/Id eq ${userID} and (Status eq 'Open')&$orderby=Created desc`;
 
     const res = await axios.get(apiUrl, {
       headers: {
@@ -112,7 +112,7 @@ export async function fetchMyClosedTickets() {
     const baseURL: any = state?.login?.tanent;
     const userID: any = state?.login?.user?.UsersId;
 
-    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=AssignedTo/Id eq ${userID} and (Status eq 'Closed')`;
+    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=AssignedTo/Id eq ${userID} and (Status eq 'Closed')&$orderby=Created desc`;
 
     const res = await axios.get(apiUrl, {
       headers: {
@@ -136,7 +136,7 @@ export async function fetchMyResolvedTickets() {
     const baseURL: any = state?.login?.tanent;
     const userID: any = state?.login?.user?.UsersId;
 
-    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=AssignedTo/Id eq ${userID} and (Status eq 'Resolved')`;
+    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=AssignedTo/Id eq ${userID} and (Status eq 'Resolved')&$orderby=Created desc`;
 
     const res = await axios.get(apiUrl, {
       headers: {
@@ -159,7 +159,7 @@ export async function fetchTeamsTickets() {
     const token: any = state?.login?.token;
     const baseURL: any = state?.login?.tanent;
 
-    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(AssignedTo ne null) and ((ApprovalStatus eq 'Approved') or (ApprovalStatus eq null))`;
+    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(AssignedTo ne null) and ((ApprovalStatus eq 'Approved') or (ApprovalStatus eq null))&$orderby=Created desc`;
     
     const res = await axios.get(apiUrl, {
       headers: {
@@ -182,7 +182,7 @@ export async function fetchTeamsOpenTickets() {
     const token: any = state?.login?.token;
     const baseURL: any = state?.login?.tanent;
 
-    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(AssignedTo ne null) and ((ApprovalStatus eq 'Approved') or (ApprovalStatus eq null)) and (Status eq 'Open')`;
+    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(AssignedTo ne null) and ((ApprovalStatus eq 'Approved') or (ApprovalStatus eq null)) and (Status eq 'Open')&$orderby=Created desc`;
     
     const res = await axios.get(apiUrl, {
       headers: {
@@ -205,7 +205,7 @@ export async function fetchTeamsClosedTickets() {
     const token: any = state?.login?.token;
     const baseURL: any = state?.login?.tanent;
 
-    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(AssignedTo ne null) and ((ApprovalStatus eq 'Approved') or (ApprovalStatus eq null)) and (Status eq 'Closed')`;
+    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(AssignedTo ne null) and ((ApprovalStatus eq 'Approved') or (ApprovalStatus eq null)) and (Status eq 'Closed')&$orderby=Created desc`;
     
     const res = await axios.get(apiUrl, {
       headers: {
@@ -228,7 +228,7 @@ export async function fetchTeamsResolvedTickets() {
     const token: any = state?.login?.token;
     const baseURL: any = state?.login?.tanent;
 
-    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(AssignedTo ne null) and ((ApprovalStatus eq 'Approved') or (ApprovalStatus eq null)) and (Status eq 'Resolved')`;
+    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(AssignedTo ne null) and ((ApprovalStatus eq 'Approved') or (ApprovalStatus eq null)) and (Status eq 'Resolved')&$orderby=Created desc`;
     
     const res = await axios.get(apiUrl, {
       headers: {
@@ -311,7 +311,7 @@ export async function fetchMyRequestsTickets() {
     const baseURL: any = state?.login?.tanent;
     const userID: any = state?.login?.user?.UsersId;
 
-    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(Requester/Id eq ${userID})`;
+    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$filter=(Requester/Id eq ${userID})&$orderby=Created desc`;
 
     const res = await axios.get(apiUrl, {
       headers: {
@@ -320,6 +320,9 @@ export async function fetchMyRequestsTickets() {
         Authorization: `Bearer ${token}`,
       },
     });
+
+    console.log(res?.data?.value, "res?.data?.value");
+    
 
     return res?.data?.value ?? [];
   } catch (error) {
@@ -335,7 +338,7 @@ export async function fetchMyOpenRequestsTickets() {
     const baseURL: any = state?.login?.tanent;
     const userID: any = state?.login?.user?.UsersId;
 
-    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(Requester/Id eq ${userID}) and (Status eq 'Open')`;
+    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$filter=(Requester/Id eq ${userID}) and (Status ne 'Closed') and (Status ne 'Resolved')&$orderby=Created desc`;
 
     const res = await axios.get(apiUrl, {
       headers: {
@@ -359,7 +362,7 @@ export async function fetchMyClosedRequestsTickets() {
     const baseURL: any = state?.login?.tanent;
     const userID: any = state?.login?.user?.UsersId;
 
-    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(Requester/Id eq ${userID}) and (Status eq 'Closed')`;
+    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(Requester/Id eq ${userID}) and (Status eq 'Closed')&$orderby=Created desc`;
 
     const res = await axios.get(apiUrl, {
       headers: {
@@ -383,7 +386,7 @@ export async function fetchMyResolvedRequestsTickets() {
     const baseURL: any = state?.login?.tanent;
     const userID: any = state?.login?.user?.UsersId;
 
-    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(Requester/Id eq ${userID}) and (Status eq 'Resolved')`;
+    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(Requester/Id eq ${userID}) and (Status eq 'Resolved')&$orderby=Created desc`;
 
     const res = await axios.get(apiUrl, {
       headers: {
@@ -407,7 +410,7 @@ export async function fetchMyApprovalTickets() {
     const baseURL: any = state?.login?.tanent;
     const userID: any = state?.login?.user?.UsersId;
 
-    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(ApprovalStatus ne null)`;
+    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(ApprovalStatus ne null)&$orderby=Created desc`;
 
     const res = await axios.get(apiUrl, {
       headers: {
@@ -430,7 +433,7 @@ export async function fetchMyPendingApprovalTickets() {
     const token: any = state?.login?.token;
     const baseURL: any = state?.login?.tanent;
 
-    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(ApprovalStatus ne null) and (ApprovalStatus eq 'Pending')`;
+    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(ApprovalStatus ne null) and (ApprovalStatus eq 'Pending')&$orderby=Created desc`;
 
     const res = await axios.get(apiUrl, {
       headers: {
@@ -454,7 +457,7 @@ export async function fetchMyApprovedApprovalTickets() {
     const baseURL: any = state?.login?.tanent;
     const userID: any = state?.login?.user?.UsersId;
 
-    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(ApprovalStatus ne null) and (ApprovalStatus eq 'Approved')`;
+    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(ApprovalStatus ne null) and (ApprovalStatus eq 'Approved')&$orderby=Created desc`;
 
     const res = await axios.get(apiUrl, {
       headers: {
@@ -478,7 +481,7 @@ export async function fetchMyRejectedApprovalTickets() {
     const baseURL: any = state?.login?.tanent;
     const userID: any = state?.login?.user?.UsersId;
 
-    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(ApprovalStatus ne null) and (ApprovalStatus eq 'Rejected')`;
+    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(ApprovalStatus ne null) and (ApprovalStatus eq 'Rejected')&$orderby=Created desc`;
 
     const res = await axios.get(apiUrl, {
       headers: {
@@ -502,7 +505,7 @@ export async function fetchMyCancelledApprovalTickets() {
     const baseURL: any = state?.login?.tanent;
     const userID: any = state?.login?.user?.UsersId;
 
-    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(ApprovalStatus ne null) and (ApprovalStatus eq 'Cancelled')`;
+    const apiUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items?$top=5000&$select=*,AssignedTo/Title&$expand=AssignedTo&$filter=(ApprovalStatus ne null) and (ApprovalStatus eq 'Cancelled')&$orderby=Created desc`;
 
     const res = await axios.get(apiUrl, {
       headers: {

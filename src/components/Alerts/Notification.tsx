@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 999, 
+    zIndex: 9999, 
   },
   overlayBackground: {
     position: 'absolute',
@@ -176,6 +176,7 @@ const styles = StyleSheet.create({
     minWidth: "70%",
     alignItems: "center",
     borderRadius: 12,
+    zIndex: 10000,
   },
   icon: {
     marginBottom: 8,

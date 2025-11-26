@@ -40,6 +40,9 @@ import RNFS from 'react-native-fs';
 import { Buffer } from 'buffer';
 import { TemplateReplacerForCusrtomColumns, encodeEmailData, replaceAnchorTags } from '../../../hooks/customHooks';
 import { Dropdown } from 'react-native-element-dropdown';
+import ConfirmModal from '../../ConfirmModal';
+import MergeTicket from './MergeTicket';
+import SplitTicket from './SplitTicket';
 
 const isStringValidated = (value) => {
   if (value == null || value == undefined || value == "") {
@@ -99,6 +102,7 @@ const TicketDetails = ({ route }) => {
   const [replyCcInput, setReplyCcInput] = useState([]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showSubTicketModal, setShowSubTicketModal] = useState(false);
+  const [showSplitTicketModal, setShowSplitTicketModal] = useState(false);
   const [consultant, setConsultant] = useState([]);
   const [agent, setAgent] = useState([]);
   const [teamMember, setTeamMember] = useState([]);
@@ -106,6 +110,7 @@ const TicketDetails = ({ route }) => {
   const [isConsult, setISConsultant] = useState(false);
   const [isPrivateNote, setISPrivateNote] = useState(false);
   const [isTransfer, setISTransfer] = useState(false);
+  const [isMerge, setISMerge] = useState(false);
   const [isEscalate, setISEscalate] = useState(false);
   const [isReview, setISReview] = useState(false);
   const [selectedTeams, setSelectedTeams] = useState('');
@@ -124,7 +129,13 @@ const TicketDetails = ({ route }) => {
   const [SLAResponseInfoData, setSLAResponseInfoData] = useState(isStringValidated(ticketData?.SLAResponseInfo) ? JSON.parse(ticketData?.SLAResponseInfo) : []);
   const [SLAResponseDone, setSLAResponseDone] = useState(isStringValidated(ticketData?.SLAResponseDone) ? ticketData?.SLAResponseDone : '',);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
- 
+  const [showMergeConfirm, setShowMergeConfirm] = useState(false);
+  const [mergeModalVisible, setMergeModalVisible] = useState(false);
+  const [splitModalVisible, setSplitModalVisible] = useState(false);
+  const [ticketValue, setTicketValue] = useState(null);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [mergeCommentValue, setMergeCommentValue] = useState("");
+
   const richTextRef = useRef(null);
   const descriptionRef = useRef(null);
 
@@ -135,9 +146,7 @@ const TicketDetails = ({ route }) => {
   const departmentsListData = useSelector((state: RootState) => state.requests.departments);
   const departmentsOptions = departmentsListData?.map((i)=> ({ label: i.Title, value: i.Title }));
   
-  
   const EscalationTeamdepartmentsOptions = departmentsListData?.filter(i=> i.EscalationTeam === 'Yes')?.map((i)=> ({ label: i.Title, value: i.Title }));
-
 
   const TicktesDepartment = TeamsData?.filter(item=> item.Title === ticketData?.DepartmentName)?.[0];
   const Teammembers1Id = TicktesDepartment?.Teammembers1Id || [];
@@ -465,6 +474,14 @@ const TicketDetails = ({ route }) => {
 
   const handleCancelSubTicket = () => {
     setShowSubTicketModal(false);
+  };
+
+  const handleSaveSplitTicket = () => {
+    setSplitModalVisible(false);
+  };
+
+  const handleCancelSplitTicket = () => {
+    setSplitModalVisible(false);
   };
 
   const generateGUID = () => {
@@ -1343,9 +1360,93 @@ const TicketDetails = ({ route }) => {
       } catch (error) {
         console.error('Error while creating ticket:', error);
       }
-    } 
+    }
     await sendMail(commentNo);
   }
+
+  const handleConfirmMerge = async () => {
+    const commentNo = (CommentsForReply?.length + 1).toString();
+    let CommentsTo = '';
+    let CommentsToEmail = '';
+    let ticketAction = [];
+    let SLAResponse: '';
+
+    let msg = `${ticketSQNo} has been closed and merged with ${selectedTicket?.ID}.\n Please visit ${selectedTicket?.ID} for details. \n ${mergeCommentValue}`;
+      
+    const newComment = {
+        CommentNo: commentNo,
+        CommentedBy: userDetails?.FullName,
+        CommentedById: userDetails?.Email,
+        CommentedDate: new Date().toISOString(),
+        CommentType: "Merge",
+        CommentBody: encodeURIComponent(msg).replace(/"/g, '|$|'),
+        CommentsTo: ReqEmail,
+        CommentsToName: ReqName,
+        NoofAttachments: "",
+        TimeSpend: TimeSpendValue,
+        MarkAsAnswer: MarkAsAnswer,
+      };
+            console.log(newComment, 'finalTemplate');
+
+      const updatedComments = CommentsForReply?.length > 0
+        ? [...CommentsForReply, newComment]
+        : [newComment];
+        
+      setCommentsForReply(updatedComments);
+      ticketAction?.push({
+        action: "Merge",
+        oldvalue: '',
+        newvalue: comment?.replace('<p', '')?.replace('</p>', '').replace(/<[^>]*>/g, ''),
+        modifiedby: userDetails?.FullName,
+        date: new Date().toISOString(),
+      });
+
+
+      let finalTemplate = {
+        Comments: JSON.stringify(updatedComments),
+        TicketDetails: '',
+        LastCommentNo: updatedComments.length.toString(),
+        ActionOnTicket: JSON.stringify(ticketAction),
+      };      
+       
+      try {
+        const updateUrl = `${baseURL}/_api/web/lists/getbytitle('HR365HDMTickets')/items(${ticketID})`;
+       
+        const res = await axios.post(updateUrl, finalTemplate, {
+          headers: {
+            Accept: "application/json;odata=nometadata",
+            "Content-type": "application/json;odata=nometadata",
+            "odata-version": "",
+            "IF-MATCH": "*",
+            "X-HTTP-Method": "MERGE",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (res.status === 204 || res.status === 200) {
+          if (attachments && attachments.length > 0) {
+            for (let i = 0; i < attachments.length; i++) {
+              const originalName = attachments[i].name || "file";
+              const cleanName = originalName.replace(
+                /[`~!@#$%^&*()|+\=?;:'",<>\\\/{}\[\]]/g,
+                "_"
+              );
+              attachments[i].name = `${commentNo}___${cleanName}`;
+            }
+            await uploadAttachments("HR365HDMTickets", ticketID, attachments);
+          }
+          setIsOpenReply(false);
+          setAttachments([]);
+          console.log("Ticket updated successfully:");
+        }
+      } catch (error) {
+        console.error('Error while creating ticket:', error);
+      }
+    setISMerge(false);
+    setTicketValue(null);
+    setSelectedTicket(null);
+    setMergeCommentValue("");
+    setMergeModalVisible(false);
+  };
   
   return (
     <KeyboardAvoidingView 
@@ -1436,7 +1537,7 @@ const TicketDetails = ({ route }) => {
                   const isCommentTypeTransfer = item?.CommentType == "Transfer" ? true : false;
                   const isCommentTypeEscalated = item?.CommentType == "Escalate" ? true : false;
                   const isCommentTypeReview = item?.CommentType == "Review" ? true : false;
-
+                  const isCommentTypeMerge = item?.CommentType == "Merge" ? true : false;
                   if (isCommentTypePrivate && settings?.PrivateNoteShowSetting !== "On") return null;
 
                   const commentAttachments = CommentsAttachments?.filter(att => att.fileName.startsWith(`${item.CommentNo}___`));
@@ -1474,7 +1575,7 @@ const TicketDetails = ({ route }) => {
                               }
 
                               {
-                                (isCommentTypePrivate || isCommentTypeConsult || isCommentTypeTransfer || isCommentTypeEscalated) &&
+                                (isCommentTypePrivate || isCommentTypeConsult || isCommentTypeTransfer || isCommentTypeEscalated || isCommentTypeMerge) &&
                                 <View style={{ alignItems: "center", justifyContent: "flex-start", marginLeft: 4 }}>
                                   <Ionicons name="lock-closed" size={16} color="#000" />
                                 </View>
@@ -1569,11 +1670,20 @@ const TicketDetails = ({ route }) => {
                               <Ionicons name="swap-horizontal-outline" size={16} color="#026367" style={styles.dropdownIcon} />
                               <Text style={styles.dropdownText}>Transfer</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.dropdownItem} onPress={closeMenu}>
+                            <TouchableOpacity style={styles.dropdownItem} onPress={()=>{
+                              setISMerge(true);
+                              setShowMergeConfirm(true);
+                              setReplyType('merge')
+                              closeMenu();
+                            }}>
                               <Ionicons name="git-merge-outline" size={16} color="#026367" style={styles.dropdownIcon} />
                               <Text style={styles.dropdownText}>Merge</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.dropdownItem} onPress={closeMenu}>
+                            <TouchableOpacity style={styles.dropdownItem} onPress={()=>{
+                              setShowMergeConfirm(true);
+                              setReplyType('split')
+                              closeMenu();
+                            }}>
                               <Ionicons name="cut-outline" size={16} color="#026367" style={styles.dropdownIcon} />
                               <Text style={styles.dropdownText}>Split</Text>
                             </TouchableOpacity>
@@ -1810,6 +1920,7 @@ const TicketDetails = ({ route }) => {
                           setISReview(false);
                           setISEscalate(false);
                           setISPrivateNote(false);
+                          setISMerge(false);
                         }}>
                           <Ionicons name="close" size={20} color="#352f2fff" />
                           <Text style={styles.discardText}>Discard</Text>
@@ -1906,7 +2017,23 @@ const TicketDetails = ({ route }) => {
               </View>
             </TouchableWithoutFeedback>
         </ScrollView>
-        {/* CC Modal - moved outside ScrollView */}
+        <ConfirmModal 
+          message={isMerge ? 'Are you sure want to merge ticket?' : 'Are you sure you want to split the ticket?'}
+          visible={showMergeConfirm}
+          onYes={() => {
+            setShowMergeConfirm(false);
+            if(isMerge){
+              setMergeModalVisible(true);
+            } else {
+              setSplitModalVisible(true)
+            }
+            
+          }}
+          onCancel={() => {
+            setISMerge(false);
+            setShowMergeConfirm(false)
+          }}
+        />
         <Modal
           visible={showCCModal}
           transparent={true}
@@ -1984,6 +2111,48 @@ const TicketDetails = ({ route }) => {
             <View style={styles.modalOverlay}>
               <View style={[styles.modalContainer]}>
                 <CreateTicket ticketData={ticketData} handleSaveSubTicket={handleSaveSubTicket} handleCancelSubTicket={handleCancelSubTicket}/>
+              </View>
+            </View>
+          </NotificationProvider>
+        </Modal>
+        
+        <Modal
+          visible={mergeModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setMergeModalVisible(false)}
+        >
+          <NotificationProvider>
+            <View style={styles.modalOverlay}>
+              <View style={[styles.modalContainer]}>
+                <MergeTicket
+                  onConfirm={handleConfirmMerge}
+                  onCancel={() => {
+                    setISMerge(false);
+                    setMergeModalVisible(false)}
+                  }
+                  ticketValue={ticketValue}
+                  setTicketValue={setTicketValue}
+                  selectedTicket={selectedTicket}
+                  setSelectedTicket={setSelectedTicket}
+                  mergeCommentValue={mergeCommentValue}
+                  setMergeCommentValue={setMergeCommentValue}
+                />
+              </View>
+            </View>
+          </NotificationProvider>
+        </Modal>
+
+        <Modal
+          visible={splitModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setSplitModalVisible(false)}
+        >
+          <NotificationProvider>
+            <View style={styles.modalOverlay}>
+              <View style={[styles.modalContainer]}>
+                <SplitTicket ticketData={ticketData} handleSaveSplitTicket={handleSaveSplitTicket} handleCancelSplitTicket={handleCancelSplitTicket} CommentsForReply={CommentsForReply} userDetails={userDetails} preAssignName={preAssignName} ReqEmail={ReqEmail} SLAResponseDone={SLAResponseDone} SLAResponseInfoData={SLAResponseInfoData} SLABreachData={SLABreachData}/>
               </View>
             </View>
           </NotificationProvider>

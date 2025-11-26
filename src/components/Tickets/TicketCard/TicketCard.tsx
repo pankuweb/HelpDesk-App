@@ -44,27 +44,36 @@ const TicketCard: React.FC<TicketCardProps> = ({
   onPress,
 }) => {
   const { data: settings, isLoading, isError, refetch } = useFetchSettings();
+  console.log(description,'description');
+  
   const siteURL = useSelector((state: RootState) => state?.login?.tanent);
   const stripHtml = (html: string): string => {
-    if (!html) return "";
-    const regex = /<(div|p|h[1-6])[^>]*>([\s\S]*?)<\/\1>/gi;
-    let match;
-    while ((match = regex.exec(html)) !== null) {
-      let innerText = match[2].replace(/<[^>]+>/g, "").trim();
+  if (!html) return "";
 
-      innerText = innerText
-        .replace(/&nbsp;/gi, " ")
-        .replace(/&amp;/gi, "&")
-        .replace(/&lt;/gi, "<")
-        .replace(/&gt;/gi, ">")
-        .replace(/&quot;/gi, '"')
-        .replace(/&#39;/gi, "'")
-        .trim();
+  const regex = /<(div|p|h[1-6])[^>]*>([\s\S]*?)<\/\1>/gi;
+  let match;
 
-      if (innerText) return innerText;
-    }
-    return "";
-  };
+  while ((match = regex.exec(html)) !== null) {
+    let innerText = match[2].replace(/<[^>]+>/g, "").trim();
+
+    innerText = innerText
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'")
+      .trim();
+
+    if (innerText) return innerText;
+  }
+
+  return html
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .trim();
+};
+
 
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
